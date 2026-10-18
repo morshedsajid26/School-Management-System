@@ -1,0 +1,20 @@
+export const schoolInfo = {
+  name: "Oakridge International Academy",
+  shortName: "Oakridge Academy",
+  code: "OIA-9042",
+  motto: "Excellence in Education, Leadership in Character",
+  established: 1998,
+  address: "742 Evergreen Terrace, Springfield, IL 62704",
+  phone: "+1 (555) 234-5678",
+  email: "info@oakridgeacademy.edu",
+  website: "https://oakridgeacademy.edu",
+  currentAcademicYear: "2025 - 2026",
+  currentTerm: "Term 2 (Spring 2026)",
+  stats: {
+    totalStudents: 1420,
+    totalTeachers: 86,
+    totalClasses: 36,
+    attendanceRate: 95.4,
+    feeCollectionRate: 91.2,
+  },
+};
