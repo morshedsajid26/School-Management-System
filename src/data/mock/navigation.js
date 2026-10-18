@@ -18,7 +18,14 @@ export const navigationConfig = {
           badge: "36 Classes",
           subItems: [
             { label: "Academics Overview", href: "/admin/academics" },
-            { label: "Classes & Rooms", href: "/admin/classes" },
+            { label: "Academic Years & Terms", href: "/admin/academic-years" },
+            { label: "School Calendar", href: "/admin/calendar" },
+            { label: "Classes Cohorts", href: "/admin/classes" },
+            { label: "Sections & Rooms", href: "/admin/sections" },
+            { label: "Subject Catalog", href: "/admin/subjects" },
+            { label: "Teacher Assignments", href: "/admin/assignments" },
+            { label: "Class Routine & Timetable", href: "/admin/timetable" },
+            { label: "Homework & Tasks", href: "/admin/homework" },
           ],
         },
         {
@@ -37,6 +44,10 @@ export const navigationConfig = {
           href: "/admin/attendance",
           icon: "CalendarCheck",
           badge: "95.4%",
+          subItems: [
+            { label: "Student Attendance", href: "/admin/attendance" },
+            { label: "Teacher Attendance", href: "/admin/attendance/teachers" },
+          ],
         },
       ],
     },
@@ -48,11 +59,43 @@ export const navigationConfig = {
           href: "/admin/examinations",
           icon: "Award",
           badge: "Term 2",
+          subItems: [
+            { label: "Exam Schedules", href: "/admin/examinations" },
+            { label: "Marks Entry", href: "/admin/examinations/marks" },
+            { label: "Grading Scale", href: "/admin/examinations/grading" },
+            { label: "Results & Report Cards", href: "/admin/examinations/results" },
+          ],
         },
         {
           label: "Communication",
           href: "/admin/communication",
           icon: "Megaphone",
+          subItems: [
+            { label: "Notice Board", href: "/admin/communication" },
+            { label: "Notifications Center", href: "/admin/notifications" },
+          ],
+        },
+        {
+          label: "Library",
+          href: "/admin/library",
+          icon: "BookOpenCheck",
+          subItems: [
+            { label: "Book Catalog", href: "/admin/library" },
+            { label: "Book Categories", href: "/admin/library/categories" },
+            { label: "Issued Books", href: "/admin/library/issued" },
+            { label: "Return History", href: "/admin/library/returns" },
+            { label: "Overdue Books", href: "/admin/library/overdue" },
+          ],
+        },
+        {
+          label: "Transport",
+          href: "/admin/transport",
+          icon: "Bus",
+        },
+        {
+          label: "Inventory",
+          href: "/admin/inventory",
+          icon: "Boxes",
         },
         {
           label: "Resources",
@@ -65,9 +108,16 @@ export const navigationConfig = {
       group: "Management & Records",
       items: [
         {
-          label: "Finance",
+          label: "Finance & Fees",
           href: "/admin/finance",
           icon: "BadgeDollarSign",
+          subItems: [
+            { label: "Fee Structure", href: "/admin/finance/structure" },
+            { label: "Student Invoices", href: "/admin/finance/invoices" },
+            { label: "Payment Collection", href: "/admin/finance/collection" },
+            { label: "Payment History", href: "/admin/finance/history" },
+            { label: "Outstanding Dues", href: "/admin/finance/dues" },
+          ],
         },
         {
           label: "Human Resources (HR)",
@@ -75,9 +125,35 @@ export const navigationConfig = {
           icon: "Briefcase",
         },
         {
+          label: "Payroll",
+          href: "/admin/payroll",
+          icon: "CreditCard",
+        },
+        {
+          label: "Leave Management",
+          href: "/admin/leave",
+          icon: "CalendarCheck",
+        },
+        {
+          label: "Certificates",
+          href: "/admin/certificates",
+          icon: "Award",
+        },
+        {
           label: "Reports & Analytics",
           href: "/admin/reports",
           icon: "BarChart3",
+        },
+        {
+          label: "Roles & Permissions",
+          href: "/admin/roles",
+          icon: "ShieldCheck",
+          badge: "6 Roles",
+        },
+        {
+          label: "Audit Logs",
+          href: "/admin/audit-logs",
+          icon: "Activity",
         },
         {
           label: "School Settings",

@@ -10,7 +10,11 @@ import { cn } from "@/utils/cn";
 const ROUTE_LABELS = {
   admin: "Admin",
   academics: "Academics",
+  "academic-years": "Academic Years & Terms",
+  calendar: "School Calendar",
   classes: "Classes & Rooms",
+  sections: "Section Management",
+  subjects: "Subject Management",
   people: "People",
   students: "Students",
   teachers: "Teachers & Staff",

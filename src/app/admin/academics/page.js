@@ -7,7 +7,7 @@ import StatsCard from "@/components/ui/StatsCard";
 import Card, { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import { BookOpen, Layers, GraduationCap, School, ArrowUpRight, Plus, FileText } from "lucide-react";
+import { BookOpen, Layers, GraduationCap, School, ArrowUpRight, Plus, FileText, Calendar } from "lucide-react";
 
 export default function AdminAcademicsPage() {
   const departments = [
@@ -23,21 +23,23 @@ export default function AdminAcademicsPage() {
         title="Academic Curriculum & Departments"
         subtitle="Manage academic disciplines, faculty departments, curriculum standards, and timetables."
         actions={
-          <>
-            <Link href="/admin/classes">
-              <Button variant="outline" size="md" icon={School}>
-                View Class Rosters
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/admin/academic-years">
+              <Button variant="outline" size="md" icon={Calendar}>
+                Academic Years & Terms
               </Button>
             </Link>
-            <Button
-              variant="primary"
-              size="md"
-              icon={Plus}
-              onClick={() => alert("Simulating Course/Curriculum Creation...")}
-            >
-              Add Curriculum
-            </Button>
-          </>
+            <Link href="/admin/calendar">
+              <Button variant="outline" size="md" icon={Calendar}>
+                School Calendar
+              </Button>
+            </Link>
+            <Link href="/admin/classes">
+              <Button variant="outline" size="md" icon={School}>
+                Classes & Rooms
+              </Button>
+            </Link>
+          </div>
         }
       />
 

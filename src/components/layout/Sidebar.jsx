@@ -29,6 +29,8 @@ import {
   Library,
   Briefcase,
   BarChart3,
+  Bus,
+  Boxes,
   ArrowLeftRight,
   LogOut,
   X,
@@ -36,6 +38,8 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeft,
+  ShieldCheck,
+  Activity,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -59,6 +63,10 @@ const ICON_MAP = {
   Library,
   Briefcase,
   BarChart3,
+  Bus,
+  Boxes,
+  ShieldCheck,
+  Activity,
 };
 
 export default function Sidebar({

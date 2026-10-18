@@ -9,6 +9,7 @@ import { ROLE_LABELS, ROLE_COLORS, ROLES } from "@/utils/constants";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import Dropdown, { DropdownItem, DropdownHeader, DropdownDivider } from "@/components/ui/Dropdown";
+import { mockNotificationsList } from "@/data/mock/notices";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import {
   Menu,
@@ -37,41 +38,29 @@ export default function Header({
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Term 2 Tuition Invoices Due",
-      message: "18 student fee invoices remain unsettled before midterm cutoffs.",
-      time: "10m ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "Staff Academic Briefing",
-      message: "Monthly meeting scheduled for 3:30 PM in Science Hall 201.",
-      time: "1h ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "Attendance Sync Complete",
-      message: "Biometric and homeroom morning attendance synchronized (95.4%).",
-      time: "3h ago",
-      unread: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState(mockNotificationsList);
+  const [dropdownTab, setDropdownTab] = useState("all");
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const markAllRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, unread: false })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
   };
 
   const markSingleRead = (id) => {
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, unread: false } : n))
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
     );
   };
+
+  const dismissNotification = (e, id) => {
+    e.stopPropagation();
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const displayedNotifications = notifications.filter((n) =>
+    dropdownTab === "unread" ? n.unread : true
+  );
 
   const handleMockLogout = () => {
     logout();
@@ -180,17 +169,32 @@ export default function Header({
               </button>
             }
           >
-            <div className="p-3 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  Notifications
-                </span>
-                {unreadCount > 0 && (
-                  <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
-                    {unreadCount} New
-                  </span>
-                )}
+            <div className="p-3 border-b border-slate-100 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 bg-slate-100 p-0.5 rounded-lg text-[11px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setDropdownTab("all")}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    dropdownTab === "all"
+                      ? "bg-white text-indigo-700 shadow-xs font-bold"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  All ({notifications.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDropdownTab("unread")}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    dropdownTab === "unread"
+                      ? "bg-white text-indigo-700 shadow-xs font-bold"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Unread ({unreadCount})
+                </button>
               </div>
+
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -203,44 +207,63 @@ export default function Header({
             </div>
 
             <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-              {notifications.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => markSingleRead(item.id)}
-                  className={`p-3 text-left hover:bg-slate-50 transition cursor-pointer flex gap-3 ${
-                    item.unread ? "bg-indigo-50/30" : ""
-                  }`}
-                >
-                  <div className="mt-1">
-                    <span
-                      className={`block h-2 w-2 rounded-full ${
-                        item.unread ? "bg-indigo-600" : "bg-slate-300"
-                      }`}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-slate-900 truncate">
-                        {item.title}
-                      </p>
-                      <span className="text-[10px] text-slate-400 shrink-0">
-                        {item.time}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5 leading-snug">
-                      {item.message}
-                    </p>
-                  </div>
+              {displayedNotifications.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400">
+                  No notifications in this view.
                 </div>
-              ))}
+              ) : (
+                displayedNotifications.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      markSingleRead(item.id);
+                      if (item.link) router.push(item.link);
+                    }}
+                    className={`p-3 text-left hover:bg-slate-50 transition cursor-pointer flex items-start gap-3 relative group ${
+                      item.unread ? "bg-indigo-50/30" : ""
+                    }`}
+                  >
+                    <div className="mt-1">
+                      <span
+                        className={`block h-2 w-2 rounded-full ${
+                          item.unread ? "bg-indigo-600 ring-2 ring-indigo-200" : "bg-slate-300"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 pr-6">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-bold text-slate-900 truncate">
+                          {item.title}
+                        </p>
+                        <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                          {item.time}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                        {item.message}
+                      </p>
+                    </div>
+
+                    {/* Quick dismiss button */}
+                    <button
+                      type="button"
+                      onClick={(e) => dismissNotification(e, item.id)}
+                      className="absolute right-2 top-2 p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition opacity-0 group-hover:opacity-100"
+                      title="Dismiss notification"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
 
-            <div className="p-2 border-t border-slate-100 text-center bg-slate-50/60 rounded-b-2xl">
+            <div className="p-2.5 border-t border-slate-100 text-center bg-slate-50/60 rounded-b-2xl">
               <Link
-                href="/admin/communication"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 block py-1"
+                href="/admin/notifications"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 block py-1"
               >
-                View all announcements & alerts →
+                Open Full Notifications Center →
               </Link>
             </div>
           </Dropdown>
