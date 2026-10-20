@@ -6,525 +6,348 @@ import PageHeader from "@/components/shared/PageHeader";
 import StatsCard from "@/components/ui/StatsCard";
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
-import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 import Table, { TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import AttendanceTrendChart from "@/components/charts/AttendanceTrendChart";
-import EnrollmentBarChart from "@/components/charts/EnrollmentBarChart";
-import FeeCollectionChart from "@/components/charts/FeeCollectionChart";
+import Avatar from "@/components/ui/Avatar";
 import { schoolInfo } from "@/data/mock/school";
+import { mockAttendanceStats, mockRecentAbsences } from "@/data/mock/attendance";
+import { mockAttendanceTrendData } from "@/data/mock/dashboardOverview";
 import {
-  dashboardPeriods,
-  mockSummaryMetrics,
-  mockAttendanceTrendData,
-  mockEnrollmentData,
-  mockFeeCollectionData,
-  mockRecentActivities,
-  mockUpcomingEvents,
-  mockImportantAlerts,
-} from "@/data/mock/dashboardOverview";
-import { mockAttendanceStats } from "@/data/mock/attendance";
-import { formatCurrency } from "@/utils/formatters";
-import { useModal } from "@/hooks/useModal";
-import {
-  GraduationCap,
-  Users2,
-  Users,
-  School,
   CalendarCheck,
-  BadgeDollarSign,
-  Plus,
-  ArrowUpRight,
-  Calendar,
-  AlertTriangle,
-  Info,
-  Clock,
-  Sparkles,
-  Download,
-  Megaphone,
   CheckCircle2,
+  XCircle,
+  Clock,
+  Users2,
+  ArrowRight,
+  Sparkles,
+  BarChart3,
+  Phone,
+  AlertTriangle,
+  School,
+  FileSpreadsheet,
+  Check,
+  ChevronRight,
   Filter,
 } from "lucide-react";
 
-export default function AdminDashboardPage() {
+export default function AdminAttendanceDashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
-  const [alerts, setAlerts] = useState(mockImportantAlerts);
-  const admissionModal = useModal();
-
-  // Active metrics based on selected period
-  const metrics = mockSummaryMetrics[selectedPeriod] || mockSummaryMetrics.month;
   const attendanceChartData = mockAttendanceTrendData[selectedPeriod] || mockAttendanceTrendData.month;
-  const feeChartData = mockFeeCollectionData[selectedPeriod] || mockFeeCollectionData.month;
 
-  // New Student state for admission modal
-  const [newStudentName, setNewStudentName] = useState("");
-  const [newStudentGrade, setNewStudentGrade] = useState("Grade 10");
-  const [newStudentSection, setNewStudentSection] = useState("A");
-
-  const handleDismissAlert = (alertId) => {
-    setAlerts(alerts.filter((a) => a.id !== alertId));
-  };
-
-  const handleCreateAdmission = (e) => {
-    e.preventDefault();
-    if (!newStudentName) return;
-    alert(`Student "${newStudentName}" successfully registered into ${newStudentGrade}-${newStudentSection}!`);
-    admissionModal.close();
-    setNewStudentName("");
-  };
+  // Cohort submission progress
+  const classStatusList = [
+    { grade: "Grade 10 - Section A", teacher: "Prof. Marcus Aurel", time: "08:15 AM", present: 32, total: 34, status: "Submitted" },
+    { grade: "Grade 10 - Section B", teacher: "Emma Grace Taylor", time: "08:10 AM", present: 31, total: 32, status: "Submitted" },
+    { grade: "Grade 9 - Section A", teacher: "Dr. Catherine Bennett", time: "08:20 AM", present: 29, total: 31, status: "Submitted" },
+    { grade: "Grade 9 - Section B", teacher: "Jonathan Hayes", time: "08:18 AM", present: 30, total: 32, status: "Submitted" },
+    { grade: "Grade 8 - Section A", teacher: "Amina Al-Mansoor", time: "Pending", present: 0, total: 30, status: "Pending" },
+    { grade: "Grade 8 - Section B", teacher: "David K. Reynolds", time: "08:05 AM", present: 28, total: 30, status: "Submitted" },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Page Header with Period Filter & Action Buttons */}
+      {/* Page Header */}
       <PageHeader
-        title="Institutional Executive Overview"
-        subtitle={`Real-time dashboard for ${schoolInfo.name} • ${schoolInfo.currentTerm}`}
+        title="Attendance Command Center"
+        subtitle={`Live institutional attendance monitoring, today's roll call status, and absentee records for ${schoolInfo.name}`}
         actions={
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Period Filter Dropdown */}
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-xl p-1 shadow-2xs">
-              <span className="text-slate-400 pl-2">
-                <Filter className="h-3.5 w-3.5" />
-              </span>
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-800 pr-6 py-1 focus:outline-none cursor-pointer"
-                title="Filter by period"
-              >
-                {dashboardPeriods.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <Button
-              variant="outline"
-              size="md"
-              icon={Download}
-              onClick={() => alert("Exporting consolidated executive report PDF...")}
-            >
-              Export Report
-            </Button>
-
-            <Button
-              variant="primary"
-              size="md"
-              icon={Plus}
-              onClick={admissionModal.open}
-            >
-              New Admission
-            </Button>
+            <Link href="/admin/assignments">
+              <Button variant="outline" size="sm" leftIcon={<Users2 className="h-4 w-4" />}>
+                Assign Courses to Teachers
+              </Button>
+            </Link>
+            <Link href="/admin/attendance">
+              <Button variant="primary" size="sm" leftIcon={<CalendarCheck className="h-4 w-4" />}>
+                Take Today's Attendance
+              </Button>
+            </Link>
+            <Link href="/admin/attendance/reports">
+              <Button variant="outline" size="sm" leftIcon={<BarChart3 className="h-4 w-4" />}>
+                Monthly Reports
+              </Button>
+            </Link>
           </div>
         }
       />
 
-      {/* Important Alerts Banner (if any) */}
-      {alerts.length > 0 && (
-        <div className="space-y-2.5">
-          {alerts.map((alertItem) => (
-            <div
-              key={alertItem.id}
-              className={`p-3.5 rounded-2xl border flex items-center justify-between gap-4 transition-all duration-150 ${
-                alertItem.level === "warning"
-                  ? "bg-amber-50/80 border-amber-200/80 text-amber-900"
-                  : "bg-blue-50/80 border-blue-200/80 text-blue-900"
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <span
-                  className={`p-2 rounded-xl shrink-0 ${
-                    alertItem.level === "warning"
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-blue-100 text-blue-700"
-                  }`}
-                >
-                  {alertItem.level === "warning" ? (
-                    <AlertTriangle className="h-4 w-4" />
-                  ) : (
-                    <Info className="h-4 w-4" />
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold truncate">{alertItem.title}</p>
-                  <p className="text-xs text-slate-600 truncate mt-0.5">
-                    {alertItem.message}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <Link
-                  href={alertItem.actionHref}
-                  className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold hover:bg-slate-50 transition shadow-2xs"
-                >
-                  {alertItem.actionText}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => handleDismissAlert(alertItem.id)}
-                  className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 6 Summary Metric Cards (Prompt Requirement 1) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {/* 1. Total Students */}
+      {/* Primary KPI Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
-          title="Students"
-          value={metrics.totalStudents}
-          trend={{ value: metrics.studentsTrend, isPositive: true }}
-          icon={GraduationCap}
-          variant="indigo"
-        />
-
-        {/* 2. Total Teachers */}
-        <StatsCard
-          title="Teachers"
-          value={metrics.totalTeachers}
-          trend={{ value: metrics.teachersTrend, isPositive: true }}
-          icon={Users2}
-          variant="emerald"
-        />
-
-        {/* 3. Total Staff */}
-        <StatsCard
-          title="Staff"
-          value={metrics.totalStaff}
-          description={metrics.staffTrend}
-          icon={Users}
-          variant="purple"
-        />
-
-        {/* 4. Total Classes */}
-        <StatsCard
-          title="Classes"
-          value={metrics.totalClasses}
-          description={metrics.classesTrend}
-          icon={School}
-          variant="blue"
-        />
-
-        {/* 5. Attendance Rate */}
-        <StatsCard
-          title="Attendance"
-          value={`${metrics.attendanceRate}%`}
-          trend={{ value: metrics.attendanceTrend, isPositive: true }}
+          title="Today's Attendance Rate"
+          value={`${mockAttendanceStats.overallPercentage}%`}
+          change="+1.2% from yesterday"
+          changeType="positive"
           icon={CalendarCheck}
-          variant="emerald"
+          color="indigo"
         />
-
-        {/* 6. Outstanding Fees */}
         <StatsCard
-          title="Pending Fees"
-          value={formatCurrency(metrics.outstandingFees)}
-          description={metrics.feesTrend}
-          icon={BadgeDollarSign}
-          variant="amber"
+          title="Present Today"
+          value={`${mockAttendanceStats.presentCount} / ${mockAttendanceStats.totalStudents}`}
+          change="Students Marked Present"
+          changeType="positive"
+          icon={CheckCircle2}
+          color="emerald"
+        />
+        <StatsCard
+          title="Absent Today"
+          value={`${mockAttendanceStats.absentCount} Students`}
+          change="12 Excused • 36 Unexcused"
+          changeType="negative"
+          icon={XCircle}
+          color="rose"
+        />
+        <StatsCard
+          title="Late Arrivals"
+          value={`${mockAttendanceStats.lateCount} Students`}
+          change="Average time: 8:22 AM"
+          changeType="neutral"
+          icon={Clock}
+          color="amber"
         />
       </div>
 
-      {/* Charts Row: Attendance Trend & Fee Collection (Prompt Requirement 2) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Attendance Trend Chart */}
-        <Card>
-          <CardHeader>
+      {/* Quick Access Action Bar */}
+      <Card className="border-indigo-100 bg-linear-to-r from-indigo-50/70 via-white to-blue-50/50">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 shrink-0">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Ready to mark today's roll call?
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Select a class cohort to record attendance, toggle statuses with 1 click, or generate monthly register sheets.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto flex-wrap">
+              <Link href="/admin/assignments" className="w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" leftIcon={<Users2 className="h-4 w-4" />}>
+                  Assign Courses
+                </Button>
+              </Link>
+              <Link href="/admin/attendance" className="w-full sm:w-auto">
+                <Button variant="primary" size="sm" className="w-full sm:w-auto" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                  Mark Student Roll Call
+                </Button>
+              </Link>
+              <Link href="/admin/attendance/reports" className="w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" leftIcon={<FileSpreadsheet className="h-4 w-4" />}>
+                  Monthly Register
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Charts & Analytics Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Attendance Trend Chart (2 columns) */}
+        <Card className="lg:col-span-2 border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle>Attendance Trends & Target Benchmark</CardTitle>
-              <CardDescription>
-                Visualizing daily / periodic attendance rates vs the 94% baseline.
+              <CardTitle className="text-base font-bold text-slate-900">
+                Attendance Trends & Benchmark
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Daily attendance rate vs institutional standard (94.0%)
               </CardDescription>
             </div>
-            <Link
-              href="/admin/attendance"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 shrink-0"
-            >
-              Full Log <ArrowUpRight className="h-3 w-3" />
-            </Link>
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+              <button
+                onClick={() => setSelectedPeriod("week")}
+                className={`px-2.5 py-1 rounded-lg transition ${
+                  selectedPeriod === "week" ? "bg-white text-indigo-600 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Week
+              </button>
+              <button
+                onClick={() => setSelectedPeriod("month")}
+                className={`px-2.5 py-1 rounded-lg transition ${
+                  selectedPeriod === "month" ? "bg-white text-indigo-600 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Month
+              </button>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <AttendanceTrendChart data={attendanceChartData} height={230} />
           </CardContent>
         </Card>
 
-        {/* Fee Collection Chart */}
-        <Card>
+        {/* Class-wise Attendance Performance (1 column) */}
+        <Card className="border-slate-200">
           <CardHeader>
-            <div>
-              <CardTitle>Fee Collection vs Budget Target</CardTitle>
-              <CardDescription>
-                Realized student tuition inflows against projected financial quotas.
-              </CardDescription>
-            </div>
-            <Link
-              href="/admin/finance"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 shrink-0"
-            >
-              Finance Ledger <ArrowUpRight className="h-3 w-3" />
-            </Link>
+            <CardTitle className="text-base font-bold text-slate-900">
+              Grade-Wise Rates Today
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              Attendance performance across classes
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <FeeCollectionChart data={feeChartData} height={230} />
+          <CardContent className="space-y-4 pt-1">
+            {mockAttendanceStats.byGrade.map((item) => (
+              <div key={item.grade} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800">{item.grade}</span>
+                  <span className="font-bold text-indigo-600">{item.present}% Present</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                  <div
+                    className="bg-indigo-600 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${item.present}%` }}
+                  />
+                </div>
+              </div>
+            ))}
           </CardContent>
-        </Card>
-      </div>
-
-      {/* Middle Row: Student Enrollment by Grade & Today's Attendance Snapshot */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Student Enrollment Chart (2 cols) */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle>Student Enrollment by Grade Cohort</CardTitle>
-                <CardDescription>
-                  Demographic breakdown showing boys, girls, and total room capacity limits.
-                </CardDescription>
-              </div>
-              <Badge variant="indigo">1,420 Total Enrolled</Badge>
-            </CardHeader>
-            <CardContent>
-              <EnrollmentBarChart data={mockEnrollmentData} height={230} />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Today's Attendance Summary (1 col) */}
-        <Card>
-          <CardHeader>
-            <div>
-              <CardTitle>Today&apos;s Attendance Summary</CardTitle>
-              <CardDescription>{mockAttendanceStats.date}</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Circular / Big Metric Progress */}
-            <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-between">
-              <div>
-                <span className="text-3xl font-extrabold text-indigo-700">
-                  {mockAttendanceStats.overallPercentage}%
-                </span>
-                <p className="text-xs font-semibold text-indigo-900 mt-0.5">
-                  Institutional Turnout
-                </p>
-                <p className="text-[11px] text-indigo-600/80">
-                  {mockAttendanceStats.presentCount} of {mockAttendanceStats.totalStudents} students present
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
-                <CalendarCheck className="h-6 w-6" />
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-1 text-xs">
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-600 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Present on Time
-                </span>
-                <span className="font-bold text-slate-900">{mockAttendanceStats.presentCount}</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-600 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-rose-500" /> Unexcused Absences
-                </span>
-                <span className="font-bold text-rose-600">30</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-600 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-purple-500" /> Excused Leaves
-                </span>
-                <span className="font-bold text-purple-600">18</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-slate-600 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-amber-500" /> Tardy / Late Arrivals
-                </span>
-                <span className="font-bold text-amber-600">{mockAttendanceStats.lateCount}</span>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
+          <CardFooter className="pt-2 border-t border-slate-100">
             <Link
-              href="/admin/attendance"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 w-full text-center"
+              href="/admin/attendance/reports"
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
             >
-              Open Daily Attendance Marker →
+              <span>View full monthly matrix breakdown</span>
+              <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </CardFooter>
         </Card>
       </div>
 
-      {/* Bottom Section: Recent Activities Table & Upcoming Events / Notices */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activities Table (2 cols) */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle>Recent Audit Log & System Activities</CardTitle>
-                <CardDescription>
-                  Chronological event log across admissions, attendance, and finance.
-                </CardDescription>
-              </div>
-              <span className="text-xs font-semibold text-slate-400">Live Feed</span>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow hover={false}>
-                    <TableHead>User & Persona</TableHead>
-                    <TableHead>Activity Action</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Timestamp</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockRecentActivities.map((act) => (
-                    <TableRow key={act.id}>
-                      <TableCell>
-                        <p className="font-bold text-xs text-slate-900">{act.user}</p>
-                        <p className="text-[11px] text-slate-400">{act.userRole}</p>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-700 max-w-sm">
-                        {act.action}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={act.badge} size="sm">
-                          {act.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-xs font-mono text-slate-400">
-                        {act.time}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column: Upcoming Events & Campus Notices (1 col) */}
-        <div className="space-y-6">
-          {/* Upcoming Events */}
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle>Upcoming Academic Events</CardTitle>
-                <CardDescription>Key milestones & deadlines</CardDescription>
-              </div>
-              <Calendar className="h-4 w-4 text-slate-400" />
-            </CardHeader>
-            <CardContent className="space-y-3.5">
-              {mockUpcomingEvents.map((evt) => (
+      {/* Two Column Section: Class Roll Call Submission Status & Today's Absentees */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Class Roll Call Status */}
+        <Card className="border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900">
+                Today's Roll Call Status
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Status of daily attendance submission by homeroom teachers
+              </CardDescription>
+            </div>
+            <Badge variant="indigo" size="sm">
+              5 of 6 Submitted
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-100">
+              {classStatusList.map((cls, idx) => (
                 <div
-                  key={evt.id}
-                  className="p-3 rounded-xl border border-slate-200/90 hover:bg-slate-50 transition"
+                  key={idx}
+                  className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <Badge variant={evt.color} size="sm">
-                      {evt.category}
-                    </Badge>
-                    <span className="text-[11px] font-mono text-slate-500">
-                      {evt.date}
-                    </span>
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                      <span>{cls.grade}</span>
+                      {cls.status === "Submitted" ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          <Check className="h-3 w-3" /> Submitted ({cls.time})
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                          <Clock className="h-3 w-3" /> Pending
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      Teacher: <span className="text-slate-700 font-medium">{cls.teacher}</span>
+                      {cls.status === "Submitted" && ` • ${cls.present}/${cls.total} Present`}
+                    </div>
                   </div>
-                  <h4 className="text-xs font-bold text-slate-900">{evt.title}</h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    {evt.time} • {evt.venue}
-                  </p>
+
+                  <div>
+                    {cls.status === "Pending" ? (
+                      <Link href="/admin/attendance">
+                        <Button variant="primary" size="xs">
+                          Mark Now
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href="/admin/attendance">
+                        <Button variant="ghost" size="xs" className="text-slate-600 hover:text-indigo-600">
+                          Review
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Quick Notice Shortcut */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between w-full">
-                <CardTitle className="text-sm">Active Campus Notices</CardTitle>
-                <Link
-                  href="/admin/communication"
-                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-                >
-                  View All
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2.5 text-xs">
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                <p className="font-bold text-slate-900">
-                  Parent-Teacher Academic Consultation Day
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Scheduled for next Friday in Science Hall 201.
-                </p>
-              </div>
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                <p className="font-bold text-slate-900">
-                  Campus ID Badge Policy Reminder
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Official RFID badges must be worn on all campus checkpoints.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Today's Absentee List */}
+        <Card className="border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900">
+                Today's Reported Absences
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Students requiring parent notification or verified medical excuse
+              </CardDescription>
+            </div>
+            <Link href="/admin/attendance">
+              <Button variant="ghost" size="xs" className="text-indigo-600 font-bold">
+                View All
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-100">
+              {mockRecentAbsences.map((abs) => (
+                <div key={abs.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div className="space-y-1">
+                    <div className="font-bold text-sm text-slate-900">
+                      {abs.studentName}
+                    </div>
+                    <div className="text-xs text-slate-500 flex items-center gap-2">
+                      <span className="font-semibold text-slate-700">{abs.grade}</span>
+                      <span>•</span>
+                      <span>Reason: <span className="font-medium text-slate-700">{abs.reason}</span></span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Contact: {abs.reportedBy}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-1.5">
+                    <Badge
+                      variant={abs.status === "Excused" ? "success" : "danger"}
+                      size="sm"
+                    >
+                      {abs.status}
+                    </Badge>
+                    <button
+                      onClick={() => alert(`Dialing emergency contact for ${abs.studentName}...`)}
+                      className="text-xs text-indigo-600 font-semibold hover:text-indigo-800 flex items-center gap-1"
+                    >
+                      <Phone className="h-3 w-3" />
+                      <span>Contact Parent</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+          <CardFooter className="pt-2 border-t border-slate-100">
+            <div className="w-full flex items-center justify-between text-xs text-slate-500">
+              <span>Automatic guardian SMS alert triggers at 10:00 AM</span>
+              <Badge variant="neutral" size="sm">Auto Alert: On</Badge>
+            </div>
+          </CardFooter>
+        </Card>
       </div>
-
-      {/* New Admission Modal */}
-      <Modal
-        isOpen={admissionModal.isOpen}
-        onClose={admissionModal.close}
-        title="Student Admission Registration"
-        description="Enter new student credentials to append to the active institutional roster."
-        footer={
-          <>
-            <Button variant="outline" size="sm" onClick={admissionModal.close}>
-              Cancel
-            </Button>
-            <Button variant="primary" size="sm" onClick={handleCreateAdmission}>
-              Register Student
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleCreateAdmission} className="space-y-3.5">
-          <Input
-            label="Full Legal Name"
-            placeholder="e.g. Maya Lin"
-            value={newStudentName}
-            onChange={(e) => setNewStudentName(e.target.value)}
-            required
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <Select
-              label="Assigned Grade"
-              value={newStudentGrade}
-              onChange={(e) => setNewStudentGrade(e.target.value)}
-              options={["Grade 10", "Grade 9", "Grade 8", "Grade 7", "Grade 6"]}
-            />
-            <Select
-              label="Section"
-              value={newStudentSection}
-              onChange={(e) => setNewStudentSection(e.target.value)}
-              options={["A", "B", "C"]}
-            />
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

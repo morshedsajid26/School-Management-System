@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import PageHeader from "@/components/shared/PageHeader";
 import AttendanceNavTabs from "@/components/shared/AttendanceNavTabs";
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
@@ -19,6 +20,7 @@ import {
   mockAttendanceHistoryLogs,
 } from "@/data/mock/attendance";
 import { mockClassesList, mockSectionsList } from "@/data/mock/academicStructure";
+import { mockAssignmentsList } from "@/data/mock/assignments";
 import { useModal } from "@/hooks/useModal";
 import {
   CalendarCheck,
@@ -49,6 +51,20 @@ export default function StudentAttendancePage() {
   // Selected Class & Section
   const [selectedGrade, setSelectedGrade] = useState("Grade 10");
   const [selectedSection, setSelectedSection] = useState("A");
+
+  // Available course assignments for current class & section
+  const cohortAssignments = useMemo(() => {
+    return mockAssignmentsList.filter(
+      (a) => a.className === selectedGrade && a.sectionName.includes(selectedSection)
+    );
+  }, [selectedGrade, selectedSection]);
+
+  const [selectedSubjectCode, setSelectedSubjectCode] = useState("all");
+
+  const currentCourseAssignment = useMemo(() => {
+    if (selectedSubjectCode === "all") return null;
+    return cohortAssignments.find((a) => a.subjectCode === selectedSubjectCode) || null;
+  }, [cohortAssignments, selectedSubjectCode]);
 
   // Filter & Search
   const [search, setSearch] = useState("");
@@ -289,7 +305,46 @@ export default function StudentAttendancePage() {
                   <option value="B">Section B</option>
                 </select>
               </div>
+
+              {/* Course / Subject Selector */}
+              {cohortAssignments.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-bold text-indigo-300 tracking-wider">
+                    Course:
+                  </span>
+                  <select
+                    value={selectedSubjectCode}
+                    onChange={(e) => setSelectedSubjectCode(e.target.value)}
+                    className="bg-slate-800 text-white border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[220px] truncate"
+                  >
+                    <option value="all">General Class Roll Call</option>
+                    {cohortAssignments.map((a) => (
+                      <option key={a.id} value={a.subjectCode}>
+                        {a.subjectName} ({a.teacherName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
+
+            {/* Assigned Faculty Banner */}
+            {currentCourseAssignment && (
+              <div className="w-full mt-3 pt-3 border-t border-slate-700/80 flex flex-wrap items-center justify-between gap-2 text-xs text-indigo-200">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
+                  <span>Assigned Faculty: <strong className="text-white font-bold">{currentCourseAssignment.teacherName}</strong></span>
+                  <span className="text-slate-400">• Room: {currentCourseAssignment.room}</span>
+                  <span className="text-slate-400">• Load: {currentCourseAssignment.periodsPerWeek} periods/wk</span>
+                </div>
+                <Link
+                  href="/admin/assignments"
+                  className="text-indigo-400 hover:text-white underline font-semibold flex items-center gap-1"
+                >
+                  Manage Faculty Assignments
+                </Link>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

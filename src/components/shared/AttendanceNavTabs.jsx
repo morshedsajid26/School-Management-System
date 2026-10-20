@@ -3,14 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, GraduationCap, CalendarCheck } from "lucide-react";
+import { Users, GraduationCap, CalendarCheck, BarChart3 } from "lucide-react";
 
 export default function AttendanceNavTabs({ className = "" }) {
   const pathname = usePathname();
 
   const tabs = [
-    { label: "Student Attendance", href: "/admin/attendance", icon: Users, exact: true },
-    { label: "Teacher & Faculty Attendance", href: "/admin/attendance/teachers", icon: GraduationCap },
+    { label: "Daily Student Attendance", href: "/admin/attendance", icon: CalendarCheck, exact: true },
+    { label: "Monthly Reports & Analytics", href: "/admin/attendance/reports", icon: BarChart3, exact: false },
+    { label: "Teacher & Staff Attendance", href: "/admin/attendance/teachers", icon: Users, exact: false },
   ];
 
   return (
