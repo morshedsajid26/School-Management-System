@@ -60,7 +60,7 @@ export default function AdminAttendanceDashboardPage() {
             </Link>
             <Link href="/admin/attendance">
               <Button variant="primary" size="sm" leftIcon={<CalendarCheck className="h-4 w-4" />}>
-                Take Today's Attendance
+                Take Today&apos;s Attendance
               </Button>
             </Link>
             <Link href="/admin/attendance/reports">
@@ -118,7 +118,7 @@ export default function AdminAttendanceDashboardPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Ready to mark today's roll call?
+                  Ready to mark today&apos;s roll call?
                 </h3>
                 <p className="text-xs text-slate-500">
                   Select a class cohort to record attendance, toggle statuses with 1 click, or generate monthly register sheets.
@@ -229,7 +229,7 @@ export default function AdminAttendanceDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-base font-bold text-slate-900">
-                Today's Roll Call Status
+                Today&apos;s Roll Call Status
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
                 Status of daily attendance submission by homeroom teachers
@@ -291,7 +291,7 @@ export default function AdminAttendanceDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-base font-bold text-slate-900">
-                Today's Reported Absences
+                Today&apos;s Reported Absences
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
                 Students requiring parent notification or verified medical excuse

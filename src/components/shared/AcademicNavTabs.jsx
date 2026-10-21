@@ -13,8 +13,6 @@ export default function AcademicNavTabs({ className = "" }) {
     { label: "Section Management", href: "/admin/sections", icon: DoorOpen },
     { label: "Subject Management", href: "/admin/subjects", icon: BookOpen },
     { label: "Teacher Assignments", href: "/admin/assignments", icon: UserCheck },
-    { label: "Class Routine & Timetable", href: "/admin/timetable", icon: CalendarDays },
-    { label: "Homework & Tasks", href: "/admin/homework", icon: BookOpen },
   ];
 
   return (

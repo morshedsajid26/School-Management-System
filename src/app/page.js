@@ -121,7 +121,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-md shadow-indigo-600/25 hover:bg-indigo-700 transition"
             >
               <CalendarCheck className="h-4 w-4" />
-              <span>Take Today's Attendance</span>
+              <span>Take Today&apos;s Attendance</span>
             </Link>
             <Link
               href="/admin/attendance/reports"

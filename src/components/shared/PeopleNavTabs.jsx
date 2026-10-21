@@ -12,7 +12,6 @@ export default function PeopleNavTabs({ className = "" }) {
     { label: "Students Directory", href: "/admin/students", icon: Users, exact: true },
     { label: "New Student Admission", href: "/admin/students/admission", icon: UserPlus },
     { label: "Faculty & Teachers", href: "/admin/teachers", icon: GraduationCap },
-    { label: "Administrative & Staff", href: "/admin/staff", icon: Briefcase },
   ];
 
   return (

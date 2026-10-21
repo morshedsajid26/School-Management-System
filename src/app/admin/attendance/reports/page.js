@@ -129,7 +129,7 @@ export default function MonthlyAttendanceReportsPage() {
         dailyRecords: days,
       };
     });
-  }, [selectedGrade, selectedSection, totalDaysInMonth, selectedMonth]);
+  }, [selectedGrade, selectedSection, totalDaysInMonth]);
 
   // Filtered by search and threshold
   const filteredStudents = useMemo(() => {

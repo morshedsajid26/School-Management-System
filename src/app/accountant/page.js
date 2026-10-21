@@ -7,122 +7,117 @@ import Card, { CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Table, { TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import StatusBadge from "@/components/shared/StatusBadge";
 import Button from "@/components/ui/Button";
-import { mockFinanceSummary, mockRecentTransactions } from "@/data/mock/finance";
-import { formatCurrency } from "@/utils/formatters";
+import Link from "next/link";
+import { mockTeacherAttendanceRoster, mockAttendanceStats } from "@/data/mock/attendance";
 import { useAuth } from "@/context/AuthContext";
-import { BadgeDollarSign, CreditCard, ReceiptText, Plus, FileSpreadsheet, ArrowUpRight } from "lucide-react";
+import { CalendarCheck, Users, Clock, CheckCircle2, FileSpreadsheet, ArrowRight } from "lucide-react";
 
 export default function AccountantDashboardPage() {
   const { currentUser } = useAuth();
-  const [transactions] = useState(mockRecentTransactions);
+  const [staffList] = useState(mockTeacherAttendanceRoster);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Finance & Bursary: ${currentUser?.name || "Bursar"}`}
-        subtitle="Tuition fee collections, invoicing, and institutional cash flow."
+        title={`Staff & Operations Portal: ${currentUser?.name || "Officer"}`}
+        subtitle="Operational staff daily attendance roster and payroll presence tracking."
         actions={
           <>
-            <Button
-              variant="outline"
-              size="md"
-              icon={FileSpreadsheet}
-              onClick={() => alert("Exporting financial statement...")}
-            >
-              Export Statement
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              icon={Plus}
-              onClick={() => alert("Receive Fee Payment dialog.")}
-            >
-              Record Payment
-            </Button>
+            <Link href="/admin/attendance/reports">
+              <Button
+                variant="outline"
+                size="md"
+                icon={FileSpreadsheet}
+              >
+                Attendance Reports
+              </Button>
+            </Link>
+            <Link href="/admin/attendance/teachers">
+              <Button
+                variant="primary"
+                size="md"
+                icon={CalendarCheck}
+              >
+                Mark Staff Attendance
+              </Button>
+            </Link>
           </>
         }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatsCard
-          title="Collected This Month"
-          value={formatCurrency(mockFinanceSummary.collectedThisMonth)}
-          trend={{ value: "+8.4%", isPositive: true, text: "vs target" }}
-          icon={CreditCard}
+          title="Staff Present Today"
+          value="26 / 28"
+          trend={{ value: "92.8%", isPositive: true, text: "on-duty rate" }}
+          icon={CheckCircle2}
           variant="emerald"
         />
         <StatsCard
-          title="Outstanding Student Fees"
-          value={formatCurrency(mockFinanceSummary.pendingFees)}
-          description="Due before finals"
-          icon={BadgeDollarSign}
+          title="Total Operational Staff"
+          value="28"
+          description="Support, finance, admin"
+          icon={Users}
+          variant="indigo"
+        />
+        <StatsCard
+          title="On Scheduled Leave"
+          value="2"
+          description="Approved leaves"
+          icon={Clock}
           variant="amber"
         />
         <StatsCard
-          title="Monthly Operating Costs"
-          value={formatCurrency(mockFinanceSummary.monthlyExpenses)}
-          description="Staff payroll & utilities"
-          icon={ReceiptText}
-          variant="rose"
-        />
-        <StatsCard
-          title="Net Cashflow"
-          value={formatCurrency(mockFinanceSummary.netCashflow)}
-          trend={{ value: "Positive", isPositive: true, text: "healthy liquidity" }}
-          icon={BadgeDollarSign}
-          variant="indigo"
+          title="Institutional Attendance"
+          value={`${mockAttendanceStats.overallPercentage}%`}
+          trend={{ value: "+1.2%", isPositive: true, text: "vs target" }}
+          icon={CalendarCheck}
+          variant="blue"
         />
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Recent Fee Invoices & Payment Submissions</CardTitle>
-            <CardDescription>Audited transactions ledger</CardDescription>
+            <CardTitle>Staff Attendance Roster</CardTitle>
+            <CardDescription>Verified daily clock-in / clock-out status</CardDescription>
           </div>
+          <Link href="/admin/attendance/teachers" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+            View All in Attendance Module <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow hover={false}>
-                <TableHead>Invoice</TableHead>
-                <TableHead>Student Name</TableHead>
-                <TableHead>Fee Type</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead>Staff ID</TableHead>
+                <TableHead>Staff Member</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Designation</TableHead>
+                <TableHead>Check-in Time</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((txn) => (
-                <TableRow key={txn.id}>
+              {staffList.slice(0, 8).map((staff) => (
+                <TableRow key={staff.id}>
                   <TableCell className="font-mono text-xs font-bold text-slate-800">
-                    {txn.id}
+                    {staff.id}
                   </TableCell>
                   <TableCell className="text-xs font-semibold text-slate-900">
-                    {txn.studentName}
+                    {staff.name}
                   </TableCell>
                   <TableCell className="text-xs text-slate-600">
-                    {txn.type}
+                    {staff.department}
                   </TableCell>
                   <TableCell className="text-xs text-slate-600">
-                    {txn.method}
+                    {staff.designation || staff.subject || "Staff Member"}
                   </TableCell>
-                  <TableCell className="text-xs font-bold text-slate-900">
-                    {formatCurrency(txn.amount)}
+                  <TableCell className="text-xs font-mono text-slate-700">
+                    {staff.checkInTime || "--:--"}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={txn.status} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => alert(`Printing receipt for ${txn.id}`)}
-                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-                    >
-                      Print Receipt
-                    </button>
+                    <StatusBadge status={staff.status} />
                   </TableCell>
                 </TableRow>
               ))}

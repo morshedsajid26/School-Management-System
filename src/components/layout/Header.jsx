@@ -83,7 +83,7 @@ export default function Header({
     { title: "Liam Alexander Chen", category: "Student (10-A)", href: "/admin/students" },
     { title: "Prof. Marcus Aurel", category: "Faculty (Physics)", href: "/admin/teachers" },
     { title: "Grade 10 - Section A", category: "Classroom 201", href: "/admin/classes" },
-    { title: "Tuition Fee Payments Ledger", category: "Finance", href: "/admin/finance" },
+    { title: "Monthly Attendance Register Sheets", category: "Reports", href: "/admin/attendance/reports" },
     { title: "School Profile & Terms", category: "Settings", href: "/admin/settings" },
     { title: "Daily Attendance Verification", category: "Attendance", href: "/admin/attendance" },
   ].filter((item) =>
