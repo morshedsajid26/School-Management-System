@@ -38,7 +38,7 @@ const STEPS = [
   { id: 5, title: "Review & Submit", desc: "Verification & confirmation", icon: FileCheck2 },
 ];
 
-const GRADES = ["Grade 10", "Grade 9", "Grade 8", "Grade 7", "Grade 6"];
+const BATCH_OPTIONS = ["Batch 2025", "Batch 2024", "Batch 2026", "Batch 2027", "Batch 2028"];
 const SECTIONS = ["A", "B", "C"];
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -53,9 +53,10 @@ export default function StudentAdmissionPage() {
     admissionNumber: "ADM-2025-088",
     admissionDate: "2025-09-01",
     academicYear: "2025-2026",
-    grade: "Grade 10",
+    batch: "Batch 2025",
+    grade: "Batch 2025",
     section: "A",
-    rollNumber: "10-A-15",
+    rollNumber: "B25-A-15",
     enrollmentType: "Regular Admission",
     previousSchool: "St. Jude Middle School",
 
@@ -93,9 +94,10 @@ export default function StudentAdmissionPage() {
       admissionNumber: "ADM-2025-104",
       admissionDate: "2025-09-01",
       academicYear: "2025-2026",
-      grade: "Grade 9",
+      batch: "Batch 2024",
+      grade: "Batch 2024",
       section: "B",
-      rollNumber: "09-B-12",
+      rollNumber: "B24-B-12",
       enrollmentType: "Regular Admission",
       previousSchool: "Oakridge Preparatory Junior High",
 
@@ -393,11 +395,20 @@ export default function StudentAdmissionPage() {
                       />
 
                       <Select
-                        label="Class / Grade Level *"
-                        value={formData.grade}
+                        label="Target Academic Batch *"
+                        value={formData.batch || formData.grade}
                         error={formErrors.grade}
-                        onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                        options={GRADES.map((g) => ({ label: g, value: g }))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const yr = val.replace("Batch ", "").slice(-2);
+                          setFormData({
+                            ...formData,
+                            batch: val,
+                            grade: val,
+                            rollNumber: `B${yr}-${formData.section}-15`,
+                          });
+                        }}
+                        options={BATCH_OPTIONS.map((b) => ({ label: b, value: b }))}
                       />
 
                       <Select
@@ -706,9 +717,9 @@ export default function StudentAdmissionPage() {
                             </span>
                           </div>
                           <div>
-                            <span className="text-slate-400 block text-[11px]">Class & Sec</span>
+                            <span className="text-slate-400 block text-[11px]">Batch & Sec</span>
                             <span className="font-bold text-slate-800">
-                              {formData.grade} (Sec {formData.section})
+                              {formData.batch || formData.grade} (Sec {formData.section})
                             </span>
                           </div>
                           <div>

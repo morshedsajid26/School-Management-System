@@ -31,6 +31,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
+const BATCH_OPTIONS = ["Batch 2025", "Batch 2024", "Batch 2026", "Batch 2027", "Batch 2028"];
+
 export default function AdminSectionsPage() {
   const [sections, setSections] = useState(mockSectionsList);
   const [search, setSearch] = useState("");
@@ -51,7 +53,7 @@ export default function AdminSectionsPage() {
   const [editingSectionId, setEditingSectionId] = useState(null);
   const [formData, setFormData] = useState({
     name: "Section A",
-    className: "Grade 10",
+    className: "Batch 2025",
     room: "Science Hall 201",
     capacity: 35,
     classTeacher: "Prof. Marcus Aurel",
@@ -67,11 +69,12 @@ export default function AdminSectionsPage() {
         !search ||
         item.name.toLowerCase().includes(search.toLowerCase()) ||
         item.className.toLowerCase().includes(search.toLowerCase()) ||
+        (item.batchName && item.batchName.toLowerCase().includes(search.toLowerCase())) ||
         item.room.toLowerCase().includes(search.toLowerCase()) ||
         item.classTeacher.toLowerCase().includes(search.toLowerCase());
 
       const matchesClass =
-        classFilter === "all" || item.className === classFilter;
+        classFilter === "all" || item.className === classFilter || item.batchName === classFilter;
       const matchesStatus =
         statusFilter === "all" || item.status === statusFilter;
 
@@ -79,8 +82,7 @@ export default function AdminSectionsPage() {
     });
 
     result.sort((a, b) => {
-      if (sortBy === "class-asc") return a.className.localeCompare(b.className);
-      if (sortBy === "class-desc") return b.className.localeCompare(a.className);
+      if (sortBy === "class-asc") return (a.batchName || a.className).localeCompare(b.batchName || b.className);
       if (sortBy === "students-desc") return b.studentCount - a.studentCount;
       if (sortBy === "students-asc") return a.studentCount - b.studentCount;
       return 0;
@@ -101,7 +103,7 @@ export default function AdminSectionsPage() {
     setEditingSectionId(null);
     setFormData({
       name: "Section C",
-      className: "Grade 10",
+      className: "Batch 2025",
       room: "Science Hall 203",
       capacity: 35,
       classTeacher: "Dr. Catherine Bennett",
@@ -116,7 +118,7 @@ export default function AdminSectionsPage() {
     setEditingSectionId(sec.id);
     setFormData({
       name: sec.name,
-      className: sec.className,
+      className: sec.batchName || sec.className,
       room: sec.room,
       capacity: sec.capacity,
       classTeacher: sec.classTeacher,
@@ -130,7 +132,7 @@ export default function AdminSectionsPage() {
   const validate = () => {
     const errors = {};
     if (!formData.name.trim()) errors.name = "Section identifier is required (e.g. Section A).";
-    if (!formData.className.trim()) errors.className = "Parent class must be selected.";
+    if (!formData.className.trim()) errors.className = "Parent batch must be selected.";
     if (!formData.room.trim()) errors.room = "Classroom venue is required.";
     const cap = Number(formData.capacity);
     if (!cap || cap <= 0) errors.capacity = "Room capacity must be greater than zero.";
@@ -148,7 +150,7 @@ export default function AdminSectionsPage() {
       setSections((prev) =>
         prev.map((s) =>
           s.id === editingSectionId
-            ? { ...s, ...formData, capacity: Number(formData.capacity) }
+            ? { ...s, ...formData, batchName: formData.className, capacity: Number(formData.capacity) }
             : s
         )
       );
@@ -156,6 +158,7 @@ export default function AdminSectionsPage() {
       const newSec = {
         id: `SEC-${Date.now().toString().slice(-4)}`,
         ...formData,
+        batchName: formData.className,
         capacity: Number(formData.capacity),
         studentCount: 0,
       };
@@ -167,11 +170,11 @@ export default function AdminSectionsPage() {
   // Delete Section
   const promptDelete = (sec) => {
     confirmModal.open({
-      title: `Delete ${sec.className} - ${sec.name}?`,
+      title: `Delete ${sec.batchName || sec.className} - ${sec.name}?`,
       message:
         sec.studentCount > 0
           ? `Warning: ${sec.name} currently contains ${sec.studentCount} assigned students. Deleting this section will require student reassignment.`
-          : `Are you sure you want to remove ${sec.className} - ${sec.name}?`,
+          : `Are you sure you want to remove ${sec.batchName || sec.className} - ${sec.name}?`,
       confirmText: "Delete Section",
       variant: "danger",
       action: () => {
@@ -185,8 +188,8 @@ export default function AdminSectionsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Classroom Section Management"
-        subtitle="Manage section rosters, room assignments, physical desk capacities, and section tutors."
+        title="Batch Section Management"
+        subtitle="Divide batches into sections, allocate room venues, assign section teachers, and track student quotas."
         actions={
           <Button
             variant="primary"
@@ -205,7 +208,7 @@ export default function AdminSectionsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <StatsCard
           title="Active Sections"
-          value={`${sections.length} Rooms`}
+          value={`${sections.length} Sections`}
           description="Average 31 students per section"
           icon={DoorOpen}
           variant="indigo"
@@ -232,7 +235,7 @@ export default function AdminSectionsPage() {
           <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
             <div className="relative flex-1 w-full">
               <Input
-                placeholder="Search by section, room, class, or tutor..."
+                placeholder="Search by section, room, batch, or teacher..."
                 icon={Search}
                 value={search}
                 onChange={(e) => {
@@ -243,7 +246,7 @@ export default function AdminSectionsPage() {
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-              <div className="w-full sm:w-40">
+              <div className="w-full sm:w-44">
                 <Select
                   value={classFilter}
                   onChange={(e) => {
@@ -251,12 +254,8 @@ export default function AdminSectionsPage() {
                     setCurrentPage(1);
                   }}
                   options={[
-                    { label: "Class (All)", value: "all" },
-                    { label: "Grade 10", value: "Grade 10" },
-                    { label: "Grade 9", value: "Grade 9" },
-                    { label: "Grade 8", value: "Grade 8" },
-                    { label: "Grade 7", value: "Grade 7" },
-                    { label: "Grade 6", value: "Grade 6" },
+                    { label: "Batch (All)", value: "all" },
+                    ...BATCH_OPTIONS.map((b) => ({ label: b, value: b })),
                   ]}
                 />
               </div>
@@ -266,7 +265,7 @@ export default function AdminSectionsPage() {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   options={[
-                    { label: "Class Cohort", value: "class-asc" },
+                    { label: "Batch Name", value: "class-asc" },
                     { label: "Students (Highest)", value: "students-desc" },
                     { label: "Students (Lowest)", value: "students-asc" },
                   ]}
@@ -281,9 +280,9 @@ export default function AdminSectionsPage() {
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Configured Class Sections</CardTitle>
+            <CardTitle>Configured Batch Sections</CardTitle>
             <CardDescription>
-              Showing {processedSections.length} sections across grades.
+              Showing {processedSections.length} section divisions across batches.
             </CardDescription>
           </div>
         </CardHeader>
@@ -293,9 +292,9 @@ export default function AdminSectionsPage() {
               <TableHeader>
                 <TableRow hover={false}>
                   <TableHead>Section Name</TableHead>
-                  <TableHead>Parent Class</TableHead>
+                  <TableHead>Assigned Batch</TableHead>
                   <TableHead>Room / Venue</TableHead>
-                  <TableHead>Section Tutor</TableHead>
+                  <TableHead>Section Teacher</TableHead>
                   <TableHead>Desk Capacity</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -479,10 +478,10 @@ export default function AdminSectionsPage() {
               error={formErrors.name}
             />
             <Select
-              label="Parent Class *"
+              label="Enrolled Batch *"
               value={formData.className}
               onChange={(e) => setFormData({ ...formData, className: e.target.value })}
-              options={["Grade 10", "Grade 9", "Grade 8", "Grade 7", "Grade 6"]}
+              options={BATCH_OPTIONS}
             />
           </div>
 

@@ -16,7 +16,7 @@ import StatusBadge from "@/components/shared/StatusBadge";
 import Avatar from "@/components/ui/Avatar";
 import { mockAssignmentsList } from "@/data/mock/assignments";
 import { mockTeachers } from "@/data/mock/teachers";
-import { mockClassesList, mockSectionsList, mockSubjectsList } from "@/data/mock/academicStructure";
+import { mockClassesList, mockSectionsList, mockSubjectsList, mockSemestersList } from "@/data/mock/academicStructure";
 import { useModal } from "@/hooks/useModal";
 import {
   UserCheck,
@@ -48,6 +48,7 @@ export default function TeacherAssignmentsPage() {
   const [search, setSearch] = useState("");
   const [teacherFilter, setTeacherFilter] = useState("all");
   const [classFilter, setClassFilter] = useState("all");
+  const [semesterFilter, setSemesterFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -79,6 +80,7 @@ export default function TeacherAssignmentsPage() {
     classId: "CLS-10",
     sectionId: "SEC-10A",
     subjectId: "SUB-101",
+    semester: "1st Semester",
     periodsPerWeek: 5,
     room: "Science Hall 201",
     academicYear: "2025-2026",
@@ -117,10 +119,12 @@ export default function TeacherAssignmentsPage() {
         item.subjectCode.toLowerCase().includes(query) ||
         item.className.toLowerCase().includes(query) ||
         item.sectionName.toLowerCase().includes(query) ||
+        (item.semester && item.semester.toLowerCase().includes(query)) ||
         (item.room && item.room.toLowerCase().includes(query));
 
       const matchesTeacher = teacherFilter === "all" || item.teacherId === teacherFilter;
-      const matchesClass = classFilter === "all" || item.className === classFilter;
+      const matchesClass = classFilter === "all" || item.className === classFilter || item.batchName === classFilter;
+      const matchesSemester = semesterFilter === "all" || item.semester === semesterFilter;
       const matchesSection = sectionFilter === "all" || item.sectionName === sectionFilter;
       const matchesSubject = subjectFilter === "all" || item.subjectCode === subjectFilter;
       const matchesStatus = statusFilter === "all" || item.status === statusFilter;
@@ -129,6 +133,7 @@ export default function TeacherAssignmentsPage() {
         matchesSearch &&
         matchesTeacher &&
         matchesClass &&
+        matchesSemester &&
         matchesSection &&
         matchesSubject &&
         matchesStatus
@@ -145,7 +150,7 @@ export default function TeacherAssignmentsPage() {
     });
 
     return result;
-  }, [assignments, search, teacherFilter, classFilter, sectionFilter, subjectFilter, statusFilter, sortBy]);
+  }, [assignments, search, teacherFilter, classFilter, semesterFilter, sectionFilter, subjectFilter, statusFilter, sortBy]);
 
   // Paginated List
   const totalPages = Math.ceil(processedAssignments.length / pageSize) || 1;
@@ -163,6 +168,7 @@ export default function TeacherAssignmentsPage() {
       classId: mockClassesList[0]?.id || "CLS-10",
       sectionId: mockSectionsList[0]?.id || "SEC-10A",
       subjectId: mockSubjectsList[0]?.id || "SUB-101",
+      semester: mockSubjectsList[0]?.semester || "1st Semester",
       periodsPerWeek: 5,
       room: mockSectionsList[0]?.room || "Science Hall 201",
       academicYear: "2025-2026",
@@ -182,6 +188,7 @@ export default function TeacherAssignmentsPage() {
       classId: assignment.classId,
       sectionId: assignment.sectionId,
       subjectId: assignment.subjectId,
+      semester: assignment.semester || "1st Semester",
       periodsPerWeek: assignment.periodsPerWeek || 4,
       room: assignment.room || "",
       academicYear: assignment.academicYear || "2025-2026",
@@ -279,12 +286,14 @@ export default function TeacherAssignmentsPage() {
       employeeId: teacherObj.employeeId || "EMP-T-XXX",
       department: teacherObj.department || subjectObj.department || "General",
       classId: formData.classId,
-      className: classObj.name || "Grade 10",
+      className: classObj.name || "Batch 2025",
+      batchName: classObj.name || "Batch 2025",
       sectionId: formData.sectionId,
       sectionName: sectionObj.name || "Section A",
       subjectId: formData.subjectId,
       subjectName: subjectObj.name || "Subject",
       subjectCode: subjectObj.code || "SUB-XXX",
+      semester: formData.semester || subjectObj.semester || "1st Semester",
       periodsPerWeek: Number(formData.periodsPerWeek) || 4,
       room: formData.room || sectionObj.room || "Classroom",
       academicYear: formData.academicYear || "2025-2026",
@@ -454,16 +463,16 @@ export default function TeacherAssignmentsPage() {
                 />
               </div>
 
-              <div className="w-44">
+              <div className="w-36">
                 <Select
-                  value={teacherFilter}
+                  value={semesterFilter}
                   onChange={(e) => {
-                    setTeacherFilter(e.target.value);
+                    setSemesterFilter(e.target.value);
                     setCurrentPage(1);
                   }}
                   options={[
-                    { label: "All Teachers", value: "all" },
-                    ...mockTeachers.map((t) => ({ label: t.name, value: t.id })),
+                    { label: "All Semesters", value: "all" },
+                    ...mockSemestersList.map((s) => ({ label: s, value: s })),
                   ]}
                 />
               </div>
@@ -476,7 +485,7 @@ export default function TeacherAssignmentsPage() {
                     setCurrentPage(1);
                   }}
                   options={[
-                    { label: "All Classes", value: "all" },
+                    { label: "All Batches", value: "all" },
                     ...mockClassesList.map((c) => ({ label: c.name, value: c.name })),
                   ]}
                 />
@@ -497,7 +506,7 @@ export default function TeacherAssignmentsPage() {
                 />
               </div>
 
-              <div className="w-44">
+              <div className="w-40">
                 <Select
                   value={subjectFilter}
                   onChange={(e) => {
@@ -505,8 +514,22 @@ export default function TeacherAssignmentsPage() {
                     setCurrentPage(1);
                   }}
                   options={[
-                    { label: "All Subjects", value: "all" },
+                    { label: "All Courses", value: "all" },
                     ...mockSubjectsList.map((s) => ({ label: `${s.code} - ${s.name}`, value: s.code })),
+                  ]}
+                />
+              </div>
+
+              <div className="w-40">
+                <Select
+                  value={teacherFilter}
+                  onChange={(e) => {
+                    setTeacherFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { label: "All Teachers", value: "all" },
+                    ...mockTeachers.map((t) => ({ label: t.name, value: t.id })),
                   ]}
                 />
               </div>
@@ -518,14 +541,14 @@ export default function TeacherAssignmentsPage() {
                   options={[
                     { label: "Teacher: A to Z", value: "teacher-asc" },
                     { label: "Teacher: Z to A", value: "teacher-desc" },
-                    { label: "Class: Order", value: "class-asc" },
-                    { label: "Subject: Name", value: "subject-asc" },
+                    { label: "Batch: Order", value: "class-asc" },
+                    { label: "Course: Name", value: "subject-asc" },
                     { label: "Workload (High to Low)", value: "periods-desc" },
                   ]}
                 />
               </div>
 
-              {(search || teacherFilter !== "all" || classFilter !== "all" || sectionFilter !== "all" || subjectFilter !== "all" || statusFilter !== "all") && (
+              {(search || teacherFilter !== "all" || classFilter !== "all" || semesterFilter !== "all" || sectionFilter !== "all" || subjectFilter !== "all" || statusFilter !== "all") && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -533,6 +556,7 @@ export default function TeacherAssignmentsPage() {
                     setSearch("");
                     setTeacherFilter("all");
                     setClassFilter("all");
+                    setSemesterFilter("all");
                     setSectionFilter("all");
                     setSubjectFilter("all");
                     setStatusFilter("all");
@@ -552,11 +576,11 @@ export default function TeacherAssignmentsPage() {
             <div className="py-12">
               <EmptyState
                 icon={UserCheck}
-                title="No assignments found"
+                title="No course assignments found"
                 description={
                   search || teacherFilter !== "all" || classFilter !== "all" || subjectFilter !== "all"
                     ? "Try adjusting active search filters or selecting different criteria."
-                    : "Get started by allocating your first teacher to a class section and subject."
+                    : "Get started by allocating your first course to a batch, semester, and instructor."
                 }
                 action={
                   <Button
@@ -565,7 +589,7 @@ export default function TeacherAssignmentsPage() {
                     icon={Plus}
                     onClick={handleOpenCreate}
                   >
-                    Add New Assignment
+                    Assign Course
                   </Button>
                 }
               />
@@ -575,9 +599,10 @@ export default function TeacherAssignmentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow hover={false}>
+                    <TableHead>Curriculum Course</TableHead>
+                    <TableHead>Semester</TableHead>
+                    <TableHead>Target Batch & Section</TableHead>
                     <TableHead>Assigned Faculty</TableHead>
-                    <TableHead>Curriculum Subject</TableHead>
-                    <TableHead>Class & Section</TableHead>
                     <TableHead>Workload & Schedule</TableHead>
                     <TableHead>Room / Venue</TableHead>
                     <TableHead>Status</TableHead>
@@ -587,53 +612,60 @@ export default function TeacherAssignmentsPage() {
                 <TableBody>
                   {paginatedAssignments.map((item) => (
                     <TableRow key={item.id}>
-                      {/* Teacher Profile */}
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar
-                            name={item.teacherName}
-                            size="md"
-                            className="ring-2 ring-slate-100 shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <span className="font-bold text-slate-900 text-sm truncate block">
-                              {item.teacherName}
-                            </span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-700">
-                                {item.employeeId}
-                              </span>
-                              <span className="text-[11px] text-indigo-600 font-medium">
-                                Dept of {item.department}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      {/* Subject & Code */}
+                      {/* Course Title & Code */}
                       <TableCell>
                         <div className="space-y-1 max-w-xs">
                           <div className="flex items-center gap-1.5">
                             <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                              {item.subjectCode}
+                              {item.subjectCode || item.courseCode}
                             </span>
                             <span className="font-bold text-xs text-slate-900 truncate">
-                              {item.subjectName}
+                              {item.subjectName || item.courseName}
                             </span>
                           </div>
                         </div>
                       </TableCell>
 
-                      {/* Class & Section */}
+                      {/* Semester */}
                       <TableCell>
-                        <div className="space-y-1">
+                        <Badge variant="indigo" size="sm">
+                          {item.semester || "1st Semester"}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Batch & Section */}
+                      <TableCell>
+                        <div className="space-y-0.5">
                           <span className="text-xs font-bold text-slate-900 block">
-                            {item.className}
+                            {item.batchName || item.className}
                           </span>
                           <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">
                             {item.sectionName}
                           </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Faculty / Instructor */}
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar
+                            name={item.teacherName}
+                            size="sm"
+                            className="ring-2 ring-slate-100 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 text-xs truncate block">
+                              {item.teacherName}
+                            </span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-[10px] font-mono text-slate-500">
+                                {item.employeeId}
+                              </span>
+                              <span className="text-[10px] text-indigo-600 font-medium">
+                                • {item.department}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
 
@@ -650,7 +682,7 @@ export default function TeacherAssignmentsPage() {
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-xs text-slate-600">
                           <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span>{item.room || "Main Hall"}</span>
+                          <span>{item.room || "Science Hall 201"}</span>
                         </div>
                       </TableCell>
 
@@ -806,28 +838,18 @@ export default function TeacherAssignmentsPage() {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Teacher Selector */}
+            {/* 1. Course Selector */}
             <Select
-              label="Assigned Instructor / Teacher *"
-              value={formData.teacherId}
-              error={formErrors.teacherId}
-              onChange={(e) => {
-                setFormData({ ...formData, teacherId: e.target.value });
-                setDuplicateConflict(null);
-              }}
-              options={mockTeachers.map((t) => ({
-                label: `${t.name} (${t.employeeId} • ${t.department})`,
-                value: t.id,
-              }))}
-            />
-
-            {/* Subject Selector */}
-            <Select
-              label="Curriculum Subject *"
+              label="1. Curriculum Course *"
               value={formData.subjectId}
               error={formErrors.subjectId}
               onChange={(e) => {
-                setFormData({ ...formData, subjectId: e.target.value });
+                const sub = mockSubjectsList.find((s) => s.id === e.target.value);
+                setFormData({
+                  ...formData,
+                  subjectId: e.target.value,
+                  semester: sub?.semester || formData.semester,
+                });
                 setDuplicateConflict(null);
               }}
               options={mockSubjectsList.map((s) => ({
@@ -836,9 +858,23 @@ export default function TeacherAssignmentsPage() {
               }))}
             />
 
-            {/* Class Selector */}
+            {/* 2. Semester Selector */}
             <Select
-              label="Class / Grade Level *"
+              label="2. Course Semester *"
+              value={formData.semester}
+              onChange={(e) => {
+                setFormData({ ...formData, semester: e.target.value });
+                setDuplicateConflict(null);
+              }}
+              options={mockSemestersList.map((sem) => ({
+                label: sem,
+                value: sem,
+              }))}
+            />
+
+            {/* 3. Batch Selector */}
+            <Select
+              label="3. Target Batch *"
               value={formData.classId}
               error={formErrors.classId}
               onChange={(e) => {
@@ -855,14 +891,14 @@ export default function TeacherAssignmentsPage() {
                 setDuplicateConflict(null);
               }}
               options={mockClassesList.map((c) => ({
-                label: `${c.name} (${c.stream} Stream)`,
+                label: `${c.name} (${c.stream || "General"})`,
                 value: c.id,
               }))}
             />
 
-            {/* Section Selector */}
+            {/* 4. Section Selector */}
             <Select
-              label="Assigned Section *"
+              label="4. Target Section *"
               value={formData.sectionId}
               error={formErrors.sectionId}
               onChange={(e) => {
@@ -880,9 +916,24 @@ export default function TeacherAssignmentsPage() {
               }))}
             />
 
+            {/* 5. Teacher Selector */}
+            <Select
+              label="5. Assigned Teacher / Instructor *"
+              value={formData.teacherId}
+              error={formErrors.teacherId}
+              onChange={(e) => {
+                setFormData({ ...formData, teacherId: e.target.value });
+                setDuplicateConflict(null);
+              }}
+              options={mockTeachers.map((t) => ({
+                label: `${t.name} (${t.employeeId} • ${t.department})`,
+                value: t.id,
+              }))}
+            />
+
             {/* Weekly Periods */}
             <Input
-              label="Weekly Periods / Instruction Hours *"
+              label="Weekly Periods / Load Hours *"
               type="number"
               min="1"
               max="30"
@@ -893,21 +944,10 @@ export default function TeacherAssignmentsPage() {
 
             {/* Room / Hall */}
             <Input
-              label="Lecture Hall / Room"
+              label="Assigned Lecture Room / Hall"
               placeholder="e.g. Science Hall 201"
               value={formData.room}
               onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-            />
-
-            {/* Academic Year */}
-            <Select
-              label="Academic Year"
-              value={formData.academicYear}
-              onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-              options={[
-                { label: "2025-2026 (Active)", value: "2025-2026" },
-                { label: "2026-2027 (Upcoming)", value: "2026-2027" },
-              ]}
             />
 
             {/* Status */}

@@ -44,13 +44,15 @@ import {
   X,
 } from "lucide-react";
 
-const GRADES = ["Grade 10", "Grade 9", "Grade 8", "Grade 7", "Grade 6"];
+import { mockClassesList } from "@/data/mock/academicStructure";
+
+const BATCH_OPTIONS = ["Batch 2025", "Batch 2024", "Batch 2026", "Batch 2027", "Batch 2028"];
 const SECTIONS = ["A", "B", "C"];
 
 export default function AdminStudentsPage() {
   const [students, setStudents] = useState(mockStudents);
   const [search, setSearch] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("all");
+  const [batchFilter, setBatchFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [genderFilter, setGenderFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -61,6 +63,7 @@ export default function AdminStudentsPage() {
   const [pageSize, setPageSize] = useState(5);
 
   // Modals
+  const addModal = useModal();
   const editModal = useModal();
   const detailModal = useModal();
   const archiveDeleteModal = useModal();
@@ -75,12 +78,33 @@ export default function AdminStudentsPage() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Quick Enroll / Add Student Form State
+  const [addFormData, setAddFormData] = useState({
+    name: "",
+    admissionNumber: "ADM-2025-089",
+    rollNumber: "B25-A-09",
+    batch: "Batch 2025",
+    section: "A",
+    gender: "Male",
+    dob: "2010-06-15",
+    bloodGroup: "O+",
+    email: "",
+    phone: "+1 (555) 234-5678",
+    address: "Oakridge Campus Zone",
+    emergencyContactName: "Parent/Guardian",
+    emergencyContactPhone: "+1 (555) 987-6543",
+    admissionDate: "2025-09-01",
+    status: "active",
+  });
+  const [addErrors, setAddErrors] = useState({});
+
   // Edit Form State
   const [editFormData, setEditFormData] = useState({
     name: "",
     admissionNumber: "",
     rollNumber: "",
-    grade: "Grade 10",
+    batch: "Batch 2025",
+    grade: "Batch 2025",
     section: "A",
     gender: "Male",
     dob: "2010-01-01",
@@ -99,13 +123,13 @@ export default function AdminStudentsPage() {
   const stats = useMemo(() => {
     const total = students.length;
     const active = students.filter((s) => s.status === "active").length;
-    const distinctGrades = new Set(students.map((s) => s.grade)).size;
+    const distinctBatches = new Set(students.map((s) => s.batch || s.grade)).size;
     const avgAttendance =
       total > 0
         ? (students.reduce((acc, curr) => acc + (Number(curr.attendanceRate) || 0), 0) / total).toFixed(1)
         : 0;
 
-    return { total, active, distinctGrades, avgAttendance };
+    return { total, active, distinctBatches, avgAttendance };
   }, [students]);
 
   // Filtered and Sorted Students
@@ -121,12 +145,13 @@ export default function AdminStudentsPage() {
         (s.phone && s.phone.toLowerCase().includes(query)) ||
         (s.address && s.address.toLowerCase().includes(query));
 
-      const matchesGrade = gradeFilter === "all" || s.grade === gradeFilter;
+      const studentBatch = s.batch || s.grade;
+      const matchesBatch = batchFilter === "all" || studentBatch === batchFilter;
       const matchesSection = sectionFilter === "all" || s.section === sectionFilter;
       const matchesGender = genderFilter === "all" || s.gender?.toLowerCase() === genderFilter.toLowerCase();
       const matchesStatus = statusFilter === "all" || s.status === statusFilter;
 
-      return matchesSearch && matchesGrade && matchesSection && matchesGender && matchesStatus;
+      return matchesSearch && matchesBatch && matchesSection && matchesGender && matchesStatus;
     });
 
     result.sort((a, b) => {
@@ -139,7 +164,7 @@ export default function AdminStudentsPage() {
     });
 
     return result;
-  }, [students, search, gradeFilter, sectionFilter, genderFilter, statusFilter, sortBy]);
+  }, [students, search, batchFilter, sectionFilter, genderFilter, statusFilter, sortBy]);
 
   // Pagination Slice
   const totalPages = Math.ceil(processedStudents.length / pageSize) || 1;
@@ -151,11 +176,13 @@ export default function AdminStudentsPage() {
   // Open Edit Modal
   const handleOpenEdit = (student) => {
     setSelectedStudent(student);
+    const assignedBatch = student.batch || student.grade || "Batch 2025";
     setEditFormData({
       name: student.name,
       admissionNumber: student.admissionNumber || "",
       rollNumber: student.rollNumber || "",
-      grade: student.grade || "Grade 10",
+      batch: assignedBatch,
+      grade: assignedBatch,
       section: student.section || "A",
       gender: student.gender || "Male",
       dob: student.dob || "2010-01-01",
@@ -182,6 +209,69 @@ export default function AdminStudentsPage() {
   const handleOpenArchiveDelete = (student) => {
     setSelectedStudent(student);
     archiveDeleteModal.open();
+  };
+
+  // Validate Add Form
+  const validateAddForm = () => {
+    const errors = {};
+    if (!addFormData.name.trim()) errors.name = "Student name is required";
+    if (!addFormData.admissionNumber.trim()) errors.admissionNumber = "Admission number is required";
+    if (!addFormData.rollNumber.trim()) errors.rollNumber = "Roll number is required";
+    setAddErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Save Add Student (Direct Batch Enrollment)
+  const handleSaveAdd = (e) => {
+    e.preventDefault();
+    if (!validateAddForm()) return;
+
+    const newStudent = {
+      id: `STU-${Date.now()}`,
+      name: addFormData.name,
+      admissionNumber: addFormData.admissionNumber,
+      rollNumber: addFormData.rollNumber,
+      batch: addFormData.batch,
+      grade: addFormData.batch,
+      section: addFormData.section,
+      gender: addFormData.gender,
+      dob: addFormData.dob,
+      bloodGroup: addFormData.bloodGroup,
+      email: addFormData.email || `${addFormData.name.toLowerCase().replace(/\s+/g, ".")}@student.oakridgeacademy.edu`,
+      phone: addFormData.phone,
+      address: addFormData.address,
+      emergencyContactName: addFormData.emergencyContactName,
+      emergencyContactPhone: addFormData.emergencyContactPhone,
+      admissionDate: addFormData.admissionDate,
+      academicYear: "2025-2026",
+      status: addFormData.status,
+      attendanceRate: 100,
+      feeStatus: "paid",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    };
+
+    setStudents((prev) => [newStudent, ...prev]);
+    showToast(`Successfully enrolled ${newStudent.name} into ${newStudent.batch} (Section ${newStudent.section})!`);
+    addModal.close();
+
+    setAddFormData({
+      name: "",
+      admissionNumber: `ADM-2025-${Math.floor(100 + Math.random() * 900)}`,
+      rollNumber: `B25-${addFormData.section}-10`,
+      batch: addFormData.batch,
+      section: addFormData.section,
+      gender: "Male",
+      dob: "2010-06-15",
+      bloodGroup: "O+",
+      email: "",
+      phone: "+1 (555) 234-5678",
+      address: "Oakridge Campus Zone",
+      emergencyContactName: "Parent/Guardian",
+      emergencyContactPhone: "+1 (555) 987-6543",
+      admissionDate: new Date().toISOString().split("T")[0],
+      status: "active",
+    });
+    setAddErrors({});
   };
 
   // Validate Edit Form
@@ -212,6 +302,7 @@ export default function AdminStudentsPage() {
           ? {
               ...s,
               ...editFormData,
+              grade: editFormData.batch,
             }
           : s
       )
@@ -297,9 +388,17 @@ export default function AdminStudentsPage() {
             >
               Export Directory
             </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              icon={UserPlus}
+              onClick={addModal.open}
+            >
+              Quick Enroll to Batch
+            </Button>
             <Link href="/admin/students/admission">
               <Button variant="primary" size="md" icon={UserPlus}>
-                New Student Admission
+                Admission Wizard
               </Button>
             </Link>
           </div>
@@ -326,11 +425,11 @@ export default function AdminStudentsPage() {
           description={`${((stats.active / (stats.total || 1)) * 100).toFixed(0)}% actively enrolled`}
         />
         <StatsCard
-          title="Class Cohorts"
-          value={stats.distinctGrades}
+          title="Active Batches"
+          value={stats.distinctBatches}
           icon={Building}
           variant="purple"
-          description="Grade divisions represented"
+          description="Enrolled student batches"
         />
         <StatsCard
           title="Avg. Attendance"
@@ -368,14 +467,14 @@ export default function AdminStudentsPage() {
 
               <div className="w-36">
                 <Select
-                  value={gradeFilter}
+                  value={batchFilter}
                   onChange={(e) => {
-                    setGradeFilter(e.target.value);
+                    setBatchFilter(e.target.value);
                     setCurrentPage(1);
                   }}
                   options={[
-                    { label: "All Grades", value: "all" },
-                    ...GRADES.map((g) => ({ label: g, value: g })),
+                    { label: "All Batches", value: "all" },
+                    ...BATCH_OPTIONS.map((b) => ({ label: b, value: b })),
                   ]}
                 />
               </div>
@@ -424,13 +523,13 @@ export default function AdminStudentsPage() {
                 />
               </div>
 
-              {(search || gradeFilter !== "all" || sectionFilter !== "all" || genderFilter !== "all" || statusFilter !== "all") && (
+              {(search || batchFilter !== "all" || sectionFilter !== "all" || genderFilter !== "all" || statusFilter !== "all") && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setSearch("");
-                    setGradeFilter("all");
+                    setBatchFilter("all");
                     setSectionFilter("all");
                     setGenderFilter("all");
                     setStatusFilter("all");
@@ -452,16 +551,21 @@ export default function AdminStudentsPage() {
                 icon={Users}
                 title="No students match criteria"
                 description={
-                  search || gradeFilter !== "all" || statusFilter !== "all"
+                  search || batchFilter !== "all" || statusFilter !== "all"
                     ? "Try adjusting search terms, clearing active filters, or check spelling."
                     : "Get started by admitting your first student into Oakridge Academy."
                 }
                 action={
-                  <Link href="/admin/students/admission">
-                    <Button variant="primary" size="sm" icon={UserPlus}>
-                      New Student Admission
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" icon={UserPlus} onClick={addModal.open}>
+                      Quick Enroll
                     </Button>
-                  </Link>
+                    <Link href="/admin/students/admission">
+                      <Button variant="primary" size="sm" icon={UserPlus}>
+                        Admission Wizard
+                      </Button>
+                    </Link>
+                  </div>
                 }
               />
             </div>
@@ -471,7 +575,7 @@ export default function AdminStudentsPage() {
                 <TableHeader>
                   <TableRow hover={false}>
                     <TableHead>Student Profile</TableHead>
-                    <TableHead>Class & Roll No.</TableHead>
+                    <TableHead>Batch & Section</TableHead>
                     <TableHead>Demographics</TableHead>
                     <TableHead>Contact & Address</TableHead>
                     <TableHead>Emergency Line</TableHead>
@@ -512,13 +616,13 @@ export default function AdminStudentsPage() {
                         </div>
                       </TableCell>
 
-                      {/* Class & Roll */}
+                      {/* Batch & Section */}
                       <TableCell>
                         <div className="space-y-1">
                           <p className="text-xs font-bold text-slate-900 leading-tight">
-                            {student.grade}
+                            {student.batch || student.grade}
                           </p>
-                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">
+                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
                             Section {student.section}
                           </span>
                         </div>
@@ -748,10 +852,16 @@ export default function AdminStudentsPage() {
             />
 
             <Select
-              label="Class / Grade *"
-              value={editFormData.grade}
-              onChange={(e) => setEditFormData({ ...editFormData, grade: e.target.value })}
-              options={GRADES.map((g) => ({ label: g, value: g }))}
+              label="Assigned Batch *"
+              value={editFormData.batch || editFormData.grade}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  batch: e.target.value,
+                  grade: e.target.value,
+                })
+              }
+              options={BATCH_OPTIONS.map((b) => ({ label: b, value: b }))}
             />
 
             <Select
@@ -853,6 +963,147 @@ export default function AdminStudentsPage() {
                 { label: "Inactive / Suspended", value: "inactive" },
                 { label: "Archived / Transferred", value: "archived" },
               ]}
+            />
+          </div>
+        </form>
+      </Modal>
+
+      {/* QUICK ENROLL STUDENT TO BATCH MODAL */}
+      <Modal
+        isOpen={addModal.isOpen}
+        onClose={addModal.close}
+        title="Quick Enroll Student to Batch"
+        description="Assign a new student directly into a target batch and section with roll allocation."
+        maxWidth="max-w-2xl"
+        footer={
+          <>
+            <Button variant="outline" size="md" onClick={addModal.close}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="md" onClick={handleSaveAdd}>
+              Enroll Student to Batch
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSaveAdd} className="space-y-4">
+          <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between text-xs text-indigo-900">
+            <span className="font-semibold">Batch & Section Allocation:</span>
+            <span className="font-mono font-bold text-indigo-700 bg-white px-2 py-0.5 rounded shadow-xs border border-indigo-200/60">
+              {addFormData.batch} • Section {addFormData.section}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Full Student Name *"
+              placeholder="e.g. Tanzim Ahmed"
+              value={addFormData.name}
+              error={addErrors.name}
+              onChange={(e) => setAddFormData({ ...addFormData, name: e.target.value })}
+            />
+
+            <Input
+              label="Admission Number *"
+              value={addFormData.admissionNumber}
+              error={addErrors.admissionNumber}
+              onChange={(e) => setAddFormData({ ...addFormData, admissionNumber: e.target.value })}
+            />
+
+            <Select
+              label="Target Batch *"
+              value={addFormData.batch}
+              onChange={(e) => {
+                const newBatch = e.target.value;
+                const yr = newBatch.replace("Batch ", "").slice(-2);
+                setAddFormData({
+                  ...addFormData,
+                  batch: newBatch,
+                  rollNumber: `B${yr}-${addFormData.section}-09`,
+                });
+              }}
+              options={BATCH_OPTIONS.map((b) => ({ label: b, value: b }))}
+            />
+
+            <Select
+              label="Target Section *"
+              value={addFormData.section}
+              onChange={(e) => {
+                const newSec = e.target.value;
+                const yr = addFormData.batch.replace("Batch ", "").slice(-2);
+                setAddFormData({
+                  ...addFormData,
+                  section: newSec,
+                  rollNumber: `B${yr}-${newSec}-09`,
+                });
+              }}
+              options={SECTIONS.map((sec) => ({ label: `Section ${sec}`, value: sec }))}
+            />
+
+            <Input
+              label="Allocated Roll Number *"
+              placeholder="e.g. B25-A-09"
+              value={addFormData.rollNumber}
+              error={addErrors.rollNumber}
+              onChange={(e) => setAddFormData({ ...addFormData, rollNumber: e.target.value })}
+            />
+
+            <Select
+              label="Gender"
+              value={addFormData.gender}
+              onChange={(e) => setAddFormData({ ...addFormData, gender: e.target.value })}
+              options={[
+                { label: "Male", value: "Male" },
+                { label: "Female", value: "Female" },
+                { label: "Other", value: "Other" },
+              ]}
+            />
+
+            <Input
+              label="Student Email"
+              type="email"
+              placeholder="student@academy.edu"
+              value={addFormData.email}
+              onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
+            />
+
+            <Input
+              label="Student Phone"
+              placeholder="+1 (555) 000-0000"
+              value={addFormData.phone}
+              onChange={(e) => setAddFormData({ ...addFormData, phone: e.target.value })}
+            />
+
+            <Input
+              label="Emergency Contact Name"
+              placeholder="Parent / Guardian Name"
+              value={addFormData.emergencyContactName}
+              onChange={(e) =>
+                setAddFormData({ ...addFormData, emergencyContactName: e.target.value })
+              }
+            />
+
+            <Input
+              label="Emergency Contact Phone"
+              placeholder="+1 (555) 999-9999"
+              value={addFormData.emergencyContactPhone}
+              onChange={(e) =>
+                setAddFormData({ ...addFormData, emergencyContactPhone: e.target.value })
+              }
+            />
+
+            <Input
+              label="Date of Birth"
+              type="date"
+              value={addFormData.dob}
+              onChange={(e) => setAddFormData({ ...addFormData, dob: e.target.value })}
+            />
+
+            <Input
+              label="Admission Date"
+              type="date"
+              value={addFormData.admissionDate}
+              onChange={(e) => setAddFormData({ ...addFormData, admissionDate: e.target.value })}
             />
           </div>
         </form>

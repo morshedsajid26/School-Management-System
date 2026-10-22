@@ -13,7 +13,7 @@ import Modal from "@/components/ui/Modal";
 import Table, { TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import EmptyState from "@/components/shared/EmptyState";
 import StatusBadge from "@/components/shared/StatusBadge";
-import { mockSubjectsList } from "@/data/mock/academicStructure";
+import { mockSubjectsList, mockSemestersList } from "@/data/mock/academicStructure";
 import { useModal } from "@/hooks/useModal";
 import {
   BookOpen,
@@ -29,12 +29,16 @@ import {
   GraduationCap,
   Clock,
   AlertTriangle,
+  Calendar,
 } from "lucide-react";
+
+const BATCH_COHORTS = ["Batch 2025", "Batch 2024", "Batch 2026", "Batch 2027", "Batch 2028"];
 
 export default function AdminSubjectsPage() {
   const [subjects, setSubjects] = useState(mockSubjectsList);
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [semesterFilter, setSemesterFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name-asc");
 
@@ -53,7 +57,8 @@ export default function AdminSubjectsPage() {
     name: "",
     code: "",
     department: "Science",
-    applicableClasses: ["Grade 10", "Grade 9"],
+    semester: "1st Semester",
+    applicableClasses: ["Batch 2025", "Batch 2024"],
     weeklyPeriods: 4,
     type: "Core",
     status: "active",
@@ -73,10 +78,12 @@ export default function AdminSubjectsPage() {
 
       const matchesDept =
         departmentFilter === "all" || item.department === departmentFilter;
+      const matchesSemester =
+        semesterFilter === "all" || item.semester === semesterFilter;
       const matchesStatus =
         statusFilter === "all" || item.status === statusFilter;
 
-      return matchesSearch && matchesDept && matchesStatus;
+      return matchesSearch && matchesDept && matchesSemester && matchesStatus;
     });
 
     result.sort((a, b) => {
@@ -88,7 +95,7 @@ export default function AdminSubjectsPage() {
     });
 
     return result;
-  }, [subjects, search, departmentFilter, statusFilter, sortBy]);
+  }, [subjects, search, departmentFilter, semesterFilter, statusFilter, sortBy]);
 
   // Paginated records
   const totalPages = Math.ceil(processedSubjects.length / pageSize) || 1;
@@ -104,7 +111,8 @@ export default function AdminSubjectsPage() {
       name: "",
       code: "",
       department: "Science",
-      applicableClasses: ["Grade 10", "Grade 9"],
+      semester: "1st Semester",
+      applicableClasses: ["Batch 2025", "Batch 2024"],
       weeklyPeriods: 4,
       type: "Core",
       status: "active",
@@ -121,7 +129,8 @@ export default function AdminSubjectsPage() {
       name: sub.name,
       code: sub.code,
       department: sub.department,
-      applicableClasses: [...sub.applicableClasses],
+      semester: sub.semester || "1st Semester",
+      applicableClasses: sub.applicableClasses ? [...sub.applicableClasses] : ["Batch 2025"],
       weeklyPeriods: sub.weeklyPeriods,
       type: sub.type,
       status: sub.status,
@@ -151,10 +160,10 @@ export default function AdminSubjectsPage() {
   // Validation
   const validate = () => {
     const errors = {};
-    if (!formData.name.trim()) errors.name = "Subject title is required.";
-    if (!formData.code.trim()) errors.code = "Subject code is required (e.g. MTH-201).";
+    if (!formData.name.trim()) errors.name = "Course title is required.";
+    if (!formData.code.trim()) errors.code = "Course code is required (e.g. CSE-201).";
     if (formData.applicableClasses.length === 0) {
-      errors.classes = "Select at least one applicable grade cohort.";
+      errors.classes = "Select at least one applicable batch.";
     }
     const periods = Number(formData.weeklyPeriods);
     if (!periods || periods <= 0) {
@@ -193,8 +202,8 @@ export default function AdminSubjectsPage() {
   const promptDelete = (sub) => {
     confirmModal.open({
       title: `Delete ${sub.name}?`,
-      message: `Are you sure you want to remove ${sub.name} (${sub.code}) from the school curriculum? Teachers and examination papers associated with this subject will be unlinked.`,
-      confirmText: "Delete Subject",
+      message: `Are you sure you want to remove ${sub.name} (${sub.code}) from the curriculum? Course assignments and teacher allocations will be affected.`,
+      confirmText: "Delete Course",
       variant: "danger",
       action: () => {
         setSubjects((prev) => prev.filter((item) => item.id !== sub.id));
@@ -207,8 +216,8 @@ export default function AdminSubjectsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Subject & Course Management"
-        subtitle="Catalog academic subjects, credit period weights, department affiliations, and grade applicability."
+        title="Course Management"
+        subtitle="Catalog academic courses, configure semester assignments, target batches, and credit hour allocations."
         actions={
           <Button
             variant="primary"
@@ -216,7 +225,7 @@ export default function AdminSubjectsPage() {
             icon={Plus}
             onClick={handleOpenCreate}
           >
-            Create Subject
+            Create Course
           </Button>
         }
       />
@@ -265,7 +274,21 @@ export default function AdminSubjectsPage() {
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-              <div className="w-full sm:w-44">
+              <div className="w-full sm:w-40">
+                <Select
+                  value={semesterFilter}
+                  onChange={(e) => {
+                    setSemesterFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { label: "Semester (All)", value: "all" },
+                    ...mockSemestersList.map((sem) => ({ label: sem, value: sem })),
+                  ]}
+                />
+              </div>
+
+              <div className="w-full sm:w-40">
                 <Select
                   value={departmentFilter}
                   onChange={(e) => {
@@ -283,7 +306,7 @@ export default function AdminSubjectsPage() {
                 />
               </div>
 
-              <div className="w-full sm:w-40">
+              <div className="w-full sm:w-36">
                 <Select
                   value={statusFilter}
                   onChange={(e) => {
@@ -303,9 +326,9 @@ export default function AdminSubjectsPage() {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   options={[
-                    { label: "Subject Name (A-Z)", value: "name-asc" },
-                    { label: "Subject Name (Z-A)", value: "name-desc" },
-                    { label: "Subject Code", value: "code-asc" },
+                    { label: "Course Name (A-Z)", value: "name-asc" },
+                    { label: "Course Name (Z-A)", value: "name-desc" },
+                    { label: "Course Code", value: "code-asc" },
                     { label: "Periods (Highest)", value: "periods-desc" },
                   ]}
                 />
@@ -319,9 +342,9 @@ export default function AdminSubjectsPage() {
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Curriculum Course Directory</CardTitle>
+            <CardTitle>Academic Course Catalog</CardTitle>
             <CardDescription>
-              Showing {processedSubjects.length} subjects configured for student timetables.
+              Showing {processedSubjects.length} courses configured across semesters and batches.
             </CardDescription>
           </div>
         </CardHeader>
@@ -330,10 +353,11 @@ export default function AdminSubjectsPage() {
             <Table>
               <TableHeader>
                 <TableRow hover={false}>
-                  <TableHead>Subject Title & Code</TableHead>
+                  <TableHead>Course Title & Code</TableHead>
+                  <TableHead>Semester</TableHead>
                   <TableHead>Department</TableHead>
-                  <TableHead>Applicable Cohorts</TableHead>
-                  <TableHead>Weekly Periods</TableHead>
+                  <TableHead>Applicable Batches</TableHead>
+                  <TableHead>Weekly Load</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -356,13 +380,18 @@ export default function AdminSubjectsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      <Badge variant="indigo" size="sm">
+                        {sub.semester || "1st Semester"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       <span className="text-xs font-semibold text-slate-700">
                         {sub.department}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-xs">
-                        {sub.applicableClasses.map((cls) => (
+                        {(sub.applicableBatches || sub.applicableClasses).map((cls) => (
                           <Badge key={cls} variant="slate" size="sm">
                             {cls}
                           </Badge>
@@ -372,7 +401,7 @@ export default function AdminSubjectsPage() {
                     <TableCell>
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
                         <Clock className="h-3.5 w-3.5 text-indigo-500" />
-                        <span>{sub.weeklyPeriods} / week</span>
+                        <span>{sub.weeklyPeriods} periods</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -400,7 +429,7 @@ export default function AdminSubjectsPage() {
                           type="button"
                           onClick={() => handleOpenEdit(sub)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
-                          title="Edit Subject"
+                          title="Edit Course"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
@@ -408,7 +437,7 @@ export default function AdminSubjectsPage() {
                           type="button"
                           onClick={() => promptDelete(sub)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                          title="Delete Subject"
+                          title="Delete Course"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -420,12 +449,13 @@ export default function AdminSubjectsPage() {
             </Table>
           ) : (
             <EmptyState
-              title="No subjects match criteria"
-              description="Adjust your search query or reset department filters."
+              title="No courses match criteria"
+              description="Adjust your search query or reset semester and department filters."
               actionLabel="Reset Search"
               onAction={() => {
                 setSearch("");
                 setDepartmentFilter("all");
+                setSemesterFilter("all");
                 setStatusFilter("all");
               }}
             />
@@ -481,19 +511,19 @@ export default function AdminSubjectsPage() {
         </CardContent>
       </Card>
 
-      {/* Create / Edit Subject Modal */}
+      {/* Create / Edit Course Modal */}
       <Modal
         isOpen={createEditModal.isOpen}
         onClose={createEditModal.close}
-        title={editingSubjectId ? "Edit Subject Definition" : "Create New Subject"}
-        description="Configure academic discipline, applicable cohort levels, and weekly timetable periods."
+        title={editingSubjectId ? "Edit Course Definition" : "Create New Academic Course"}
+        description="Configure course title, code, semester assignment, batches, and load."
         footer={
           <>
             <Button variant="outline" size="sm" onClick={createEditModal.close}>
               Cancel
             </Button>
             <Button variant="primary" size="sm" onClick={handleSave}>
-              {editingSubjectId ? "Save Changes" : "Create Subject"}
+              {editingSubjectId ? "Save Course" : "Create Course"}
             </Button>
           </>
         }
@@ -501,15 +531,15 @@ export default function AdminSubjectsPage() {
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
-              label="Subject Title *"
-              placeholder="e.g. Organic Chemistry"
+              label="Course Title *"
+              placeholder="e.g. Data Structures & Algorithms"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               error={formErrors.name}
             />
             <Input
-              label="Subject Code *"
-              placeholder="e.g. CHM-201"
+              label="Course Code *"
+              placeholder="e.g. CSE-201"
               value={formData.code}
               onChange={(e) => setFormData({ ...formData, code: e.target.value })}
               error={formErrors.code}
@@ -518,30 +548,45 @@ export default function AdminSubjectsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select
+              label="Target Semester *"
+              value={formData.semester}
+              onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+              options={mockSemestersList}
+            />
+            <Select
               label="Department"
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              options={["Science", "Mathematics", "Humanities", "Technology", "Athletics"]}
+              options={["Science", "Mathematics", "Humanities", "Technology", "Athletics", "Business"]}
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
-              label="Weekly Periods *"
+              label="Weekly Periods / Credits *"
               type="number"
               placeholder="4"
               value={formData.weeklyPeriods}
               onChange={(e) => setFormData({ ...formData, weeklyPeriods: e.target.value })}
               error={formErrors.weeklyPeriods}
             />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select
               label="Course Classification"
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              options={["Core", "Elective", "Remedial"]}
+              options={["Core", "Elective", "Lab", "Remedial"]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Lead Faculty Instructor"
+              placeholder="e.g. Prof. Marcus Aurel"
+              value={formData.leadTeacher}
+              onChange={(e) => setFormData({ ...formData, leadTeacher: e.target.value })}
             />
             <Select
-              label="Subject Status"
+              label="Course Status"
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               options={[
@@ -553,10 +598,10 @@ export default function AdminSubjectsPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-              Applicable Grade Cohorts *
+              Applicable Batches *
             </label>
             <div className="flex flex-wrap gap-2">
-              {["Grade 10", "Grade 9", "Grade 8", "Grade 7", "Grade 6"].map((cls) => {
+              {BATCH_COHORTS.map((cls) => {
                 const isSelected = formData.applicableClasses.includes(cls);
                 return (
                   <button

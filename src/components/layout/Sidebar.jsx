@@ -40,6 +40,8 @@ import {
   PanelLeft,
   ShieldCheck,
   Activity,
+  DoorOpen,
+  UserPlus,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -67,6 +69,8 @@ const ICON_MAP = {
   Boxes,
   ShieldCheck,
   Activity,
+  DoorOpen,
+  UserPlus,
 };
 
 export default function Sidebar({

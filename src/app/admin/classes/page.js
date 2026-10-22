@@ -52,16 +52,18 @@ export default function AdminClassesPage() {
   const [formData, setFormData] = useState({
     name: "",
     code: "",
+    academicYear: "2025-2026",
+    sectionsString: "Section A, Section B",
     classTeacher: "Prof. Marcus Aurel",
     maxCapacity: 70,
-    stream: "General",
+    stream: "Science & Engineering",
     status: "active",
     description: "",
   });
 
   const [formErrors, setFormErrors] = useState({});
 
-  // Filtered and Sorted classes
+  // Filtered and Sorted batches
   const processedClasses = useMemo(() => {
     let result = classes.filter((item) => {
       const matchesSearch =
@@ -94,9 +96,14 @@ export default function AdminClassesPage() {
     return processedClasses.slice(start, start + pageSize);
   }, [processedClasses, currentPage, pageSize]);
 
-  // Total student counts across classes
+  // Total student counts across batches
   const totalEnrolled = useMemo(
     () => classes.reduce((acc, curr) => acc + (curr.studentCount || 0), 0),
+    [classes]
+  );
+
+  const totalSectionsCount = useMemo(
+    () => classes.reduce((acc, curr) => acc + (curr.totalSections || curr.sections?.length || 0), 0),
     [classes]
   );
 
@@ -106,9 +113,11 @@ export default function AdminClassesPage() {
     setFormData({
       name: "",
       code: "",
+      academicYear: "2025-2026",
+      sectionsString: "Section A, Section B",
       classTeacher: "Prof. Marcus Aurel",
       maxCapacity: 70,
-      stream: "General",
+      stream: "Science & Engineering",
       status: "active",
       description: "",
     });
@@ -122,6 +131,8 @@ export default function AdminClassesPage() {
     setFormData({
       name: cls.name,
       code: cls.code,
+      academicYear: cls.academicYear || "2025-2026",
+      sectionsString: cls.sections ? cls.sections.join(", ") : "Section A",
       classTeacher: cls.classTeacher,
       maxCapacity: cls.maxCapacity,
       stream: cls.stream,
@@ -135,9 +146,9 @@ export default function AdminClassesPage() {
   // Validation
   const validate = () => {
     const errors = {};
-    if (!formData.name.trim()) errors.name = "Class name is required (e.g. Grade 11).";
-    if (!formData.code.trim()) errors.code = "Class code is required (e.g. G11).";
-    if (!formData.classTeacher.trim()) errors.classTeacher = "Class teacher assignment is required.";
+    if (!formData.name.trim()) errors.name = "Batch name is required (e.g. Batch 2025).";
+    if (!formData.code.trim()) errors.code = "Batch code is required (e.g. B-2025).";
+    if (!formData.classTeacher.trim()) errors.classTeacher = "Batch advisor assignment is required.";
     const cap = Number(formData.maxCapacity);
     if (!cap || cap <= 0) errors.maxCapacity = "Capacity must be greater than zero.";
 
@@ -149,24 +160,34 @@ export default function AdminClassesPage() {
     e.preventDefault();
     if (!validate()) return;
 
+    const sectionsArray = formData.sectionsString
+      ? formData.sectionsString.split(",").map((s) => s.trim()).filter(Boolean)
+      : ["Section A"];
+
     if (editingClassId) {
       setClasses((prev) =>
         prev.map((c) =>
           c.id === editingClassId
-            ? { ...c, ...formData, maxCapacity: Number(formData.maxCapacity) }
+            ? {
+                ...c,
+                ...formData,
+                sections: sectionsArray,
+                totalSections: sectionsArray.length,
+                maxCapacity: Number(formData.maxCapacity),
+              }
             : c
         )
       );
     } else {
-      const newClass = {
-        id: `CLS-${Date.now().toString().slice(-4)}`,
+      const newBatch = {
+        id: `BATCH-${Date.now().toString().slice(-4)}`,
         ...formData,
         maxCapacity: Number(formData.maxCapacity),
-        totalSections: 1,
-        sections: ["Section A"],
+        sections: sectionsArray,
+        totalSections: sectionsArray.length,
         studentCount: 0,
       };
-      setClasses([newClass, ...classes]);
+      setClasses([newBatch, ...classes]);
     }
     createEditModal.close();
   };
@@ -177,9 +198,9 @@ export default function AdminClassesPage() {
       title: `Delete ${cls.name}?`,
       message:
         cls.studentCount > 0
-          ? `Warning: ${cls.name} has ${cls.studentCount} enrolled students. Deleting this class cohort will leave students unassigned.`
+          ? `Warning: ${cls.name} has ${cls.studentCount} enrolled students. Deleting this batch will leave students and sections unassigned.`
           : `Are you sure you want to remove ${cls.name}? This action cannot be undone.`,
-      confirmText: "Delete Class",
+      confirmText: "Delete Batch",
       variant: "danger",
       action: () => {
         setClasses((prev) => prev.filter((item) => item.id !== cls.id));
@@ -193,8 +214,8 @@ export default function AdminClassesPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Class Cohort Management"
-        subtitle="Organize grade-level cohorts, assign head class teachers, and monitor enrolled capacities."
+        title="Batch Management"
+        subtitle="Create academic batches, divide batches into sections, assign batch advisors, and manage student capacity."
         actions={
           <Button
             variant="primary"
@@ -202,36 +223,36 @@ export default function AdminClassesPage() {
             icon={Plus}
             onClick={handleOpenCreate}
           >
-            Create Class
+            Create Batch
           </Button>
         }
       />
 
-      {/* Nav Tabs between Classes, Sections, and Subjects */}
+      {/* Nav Tabs between Batches, Sections, Courses, and Teacher Assignments */}
       <AcademicNavTabs />
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <StatsCard
-          title="Total Classes"
-          value={`${classes.length} Divisions`}
-          description="Grade 6 through Grade 10 cohorts"
+          title="Total Batches"
+          value={`${classes.length} Batches`}
+          description="Active and configured student cohorts"
           icon={School}
           variant="indigo"
         />
         <StatsCard
-          title="Total Student Roster"
-          value={`${totalEnrolled} Students`}
-          description="Distributed across class divisions"
-          icon={Users}
-          variant="emerald"
+          title="Total Sections Divided"
+          value={`${totalSectionsCount} Sections`}
+          description="Section-wise allocations across batches"
+          icon={DoorOpen}
+          variant="purple"
         />
         <StatsCard
-          title="Cohort Seat Capacity"
-          value="94.2% Occupied"
-          description="Average 33 students per section"
-          icon={DoorOpen}
-          variant="blue"
+          title="Total Enrolled Students"
+          value={`${totalEnrolled} Students`}
+          description="Roster distribution across active batches"
+          icon={Users}
+          variant="emerald"
         />
       </div>
 
@@ -284,14 +305,16 @@ export default function AdminClassesPage() {
         </CardContent>
       </Card>
 
-      {/* Class List Table */}
+      {/* Batch List Table */}
       <Card>
         <CardHeader>
-          <div>
-            <CardTitle>Academic Classes Directory</CardTitle>
-            <CardDescription>
-              Showing {processedClasses.length} class records matching query.
-            </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <CardTitle>Academic Batches Directory</CardTitle>
+              <CardDescription>
+                Showing {processedClasses.length} batch records with section-wise divisions.
+              </CardDescription>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -299,11 +322,11 @@ export default function AdminClassesPage() {
             <Table>
               <TableHeader>
                 <TableRow hover={false}>
-                  <TableHead>Class Name & Code</TableHead>
-                  <TableHead>Head Class Teacher</TableHead>
-                  <TableHead>Sections</TableHead>
+                  <TableHead>Batch Name & Code</TableHead>
+                  <TableHead>Batch Advisor</TableHead>
+                  <TableHead>Divided Sections</TableHead>
                   <TableHead>Student Enrollment</TableHead>
-                  <TableHead>Stream</TableHead>
+                  <TableHead>Session & Stream</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -336,12 +359,18 @@ export default function AdminClassesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-bold text-slate-800">
-                            {cls.totalSections}
-                          </span>
-                          <span className="text-[11px] text-slate-400">
-                            ({cls.sections ? cls.sections.join(", ") : "Sec A"})
-                          </span>
+                          {cls.sections && cls.sections.length > 0 ? (
+                            cls.sections.map((sec, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                              >
+                                {sec}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-400">Section A</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -363,9 +392,10 @@ export default function AdminClassesPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-xs text-slate-600">
-                          {cls.stream}
-                        </span>
+                        <div className="text-xs">
+                          <p className="font-semibold text-slate-800">{cls.academicYear || "2025-2026"}</p>
+                          <span className="text-[11px] text-slate-500">{cls.stream}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={cls.status} />
@@ -376,7 +406,7 @@ export default function AdminClassesPage() {
                             type="button"
                             onClick={() => detailModal.open(cls)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
-                            title="View Class Details"
+                            title="View Batch Details"
                           >
                             <Eye className="h-4 w-4" />
                           </button>
@@ -384,7 +414,7 @@ export default function AdminClassesPage() {
                             type="button"
                             onClick={() => handleOpenEdit(cls)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
-                            title="Edit Class"
+                            title="Edit Batch"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
@@ -392,7 +422,7 @@ export default function AdminClassesPage() {
                             type="button"
                             onClick={() => promptDelete(cls)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                            title="Delete Class"
+                            title="Delete Batch"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -405,7 +435,7 @@ export default function AdminClassesPage() {
             </Table>
           ) : (
             <EmptyState
-              title="No classes match search criteria"
+              title="No batches match search criteria"
               description="Adjust your search query or reset the active status filters."
               actionLabel="Reset Search"
               onAction={() => {
@@ -465,19 +495,19 @@ export default function AdminClassesPage() {
         </CardContent>
       </Card>
 
-      {/* Create / Edit Class Modal */}
+      {/* Create / Edit Batch Modal */}
       <Modal
         isOpen={createEditModal.isOpen}
         onClose={createEditModal.close}
-        title={editingClassId ? "Modify Class Record" : "Create New Class Division"}
-        description="Configure class division details, academic stream, and head teacher."
+        title={editingClassId ? "Modify Batch Record" : "Create New Academic Batch"}
+        description="Configure batch name, academic session, divide sections, and designate advisor."
         footer={
           <>
             <Button variant="outline" size="sm" onClick={createEditModal.close}>
               Cancel
             </Button>
             <Button variant="primary" size="sm" onClick={handleSave}>
-              {editingClassId ? "Save Changes" : "Create Class"}
+              {editingClassId ? "Save Batch" : "Create Batch"}
             </Button>
           </>
         }
@@ -485,15 +515,15 @@ export default function AdminClassesPage() {
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
-              label="Class Name *"
-              placeholder="e.g. Grade 11"
+              label="Batch Name *"
+              placeholder="e.g. Batch 2025"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               error={formErrors.name}
             />
             <Input
-              label="Class Code *"
-              placeholder="e.g. G11"
+              label="Batch Code *"
+              placeholder="e.g. B-2025"
               value={formData.code}
               onChange={(e) => setFormData({ ...formData, code: e.target.value })}
               error={formErrors.code}
@@ -502,14 +532,30 @@ export default function AdminClassesPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
-              label="Assigned Class Teacher *"
+              label="Academic Session / Year"
+              placeholder="e.g. 2025-2026"
+              value={formData.academicYear}
+              onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
+            />
+            <Input
+              label="Divide into Sections (comma separated) *"
+              placeholder="e.g. Section A, Section B, Section C"
+              value={formData.sectionsString}
+              onChange={(e) => setFormData({ ...formData, sectionsString: e.target.value })}
+              helperText="Sections divided inside this batch"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Assigned Batch Advisor *"
               placeholder="e.g. Prof. Marcus Aurel"
               value={formData.classTeacher}
               onChange={(e) => setFormData({ ...formData, classTeacher: e.target.value })}
               error={formErrors.classTeacher}
             />
             <Input
-              label="Max Student Capacity *"
+              label="Max Batch Capacity *"
               type="number"
               placeholder="70"
               value={formData.maxCapacity}
@@ -520,13 +566,13 @@ export default function AdminClassesPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select
-              label="Academic Stream"
+              label="Department / Stream"
               value={formData.stream}
               onChange={(e) => setFormData({ ...formData, stream: e.target.value })}
-              options={["Science", "General", "Humanities", "Commerce"]}
+              options={["Science & Engineering", "General Science", "Technology", "Business & Commerce", "Humanities"]}
             />
             <Select
-              label="Class Status"
+              label="Batch Status"
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               options={[
@@ -537,21 +583,21 @@ export default function AdminClassesPage() {
           </div>
 
           <Input
-            label="Class Overview / Notes"
-            placeholder="Curriculum focus, special lab allocations..."
+            label="Batch Overview / Notes"
+            placeholder="Curriculum focus, program specializations..."
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           />
         </form>
       </Modal>
 
-      {/* View Class Details Modal */}
+      {/* View Batch Details Modal */}
       {detailModal.modalData && (
         <Modal
           isOpen={detailModal.isOpen}
           onClose={detailModal.close}
           title={`${detailModal.modalData.name} Overview`}
-          description="Detailed division metrics and room assignments."
+          description="Detailed batch metrics and divided section allocations."
           footer={
             <div className="flex items-center justify-between w-full">
               <Button
@@ -572,7 +618,7 @@ export default function AdminClassesPage() {
                     handleOpenEdit(detailModal.modalData);
                   }}
                 >
-                  Edit Class
+                  Edit Batch
                 </Button>
                 <Button variant="secondary" size="sm" onClick={detailModal.close}>
                   Close
@@ -590,21 +636,36 @@ export default function AdminClassesPage() {
                 <StatusBadge status={detailModal.modalData.status} />
               </div>
               <h3 className="text-base font-bold text-slate-900">
-                {detailModal.modalData.name} ({detailModal.modalData.stream} Stream)
+                {detailModal.modalData.name} ({detailModal.modalData.stream || "General"})
               </h3>
               <p className="text-xs text-slate-600 mt-1">
-                {detailModal.modalData.description || "Active academic classroom division."}
+                {detailModal.modalData.description || "Active academic batch cohort."}
               </p>
+            </div>
+
+            <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+              <span className="text-xs font-bold text-indigo-900 block mb-1.5">Divided Sections:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {detailModal.modalData.sections && detailModal.modalData.sections.length > 0 ? (
+                  detailModal.modalData.sections.map((sec, i) => (
+                    <span key={i} className="px-2.5 py-1 bg-white text-indigo-700 font-bold text-xs rounded-lg shadow-xs border border-indigo-200">
+                      {sec}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-500">Section A</span>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-slate-400 block font-semibold mb-0.5">Head Teacher</span>
+                <span className="text-slate-400 block font-semibold mb-0.5">Batch Advisor</span>
                 <span className="text-slate-800 font-bold">{detailModal.modalData.classTeacher}</span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-slate-400 block font-semibold mb-0.5">Total Sections</span>
-                <span className="text-slate-800 font-bold">{detailModal.modalData.totalSections} Sections</span>
+                <span className="text-slate-400 block font-semibold mb-0.5">Academic Session</span>
+                <span className="text-slate-800 font-bold">{detailModal.modalData.academicYear || "2025-2026"}</span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-400 block font-semibold mb-0.5">Student Enrollment</span>

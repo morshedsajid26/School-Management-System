@@ -12,13 +12,13 @@ export const navigationConfig = {
           exact: true,
         },
         {
-          label: "Daily Attendance",
+          label: "Take Attendance",
           href: "/admin/attendance",
           icon: "CalendarCheck",
           badge: "Daily",
           subItems: [
             { label: "Student Roll Call", href: "/admin/attendance" },
-            { label: "Teacher & Staff Attendance", href: "/admin/attendance/teachers" },
+            { label: "Faculty Attendance", href: "/admin/attendance/teachers" },
           ],
         },
         {
@@ -30,24 +30,48 @@ export const navigationConfig = {
       ],
     },
     {
-      group: "Course & Teacher Allocation",
+      group: "Batch & Course Management",
       items: [
         {
-          label: "Teacher Course Assign",
+          label: "Batch Management",
+          href: "/admin/classes",
+          icon: "School",
+        },
+        {
+          label: "Section Management",
+          href: "/admin/sections",
+          icon: "DoorOpen",
+        },
+        {
+          label: "Course Management",
+          href: "/admin/subjects",
+          icon: "BookOpen",
+        },
+        {
+          label: "Course & Teacher Assign",
           href: "/admin/assignments",
           icon: "ClipboardCheck",
           badge: "Assign",
+        },
+      ],
+    },
+    {
+      group: "Faculty & Students",
+      items: [
+        {
+          label: "Teacher Management",
+          href: "/admin/teachers",
+          icon: "GraduationCap",
         },
         {
           label: "Students Directory",
           href: "/admin/students",
           icon: "Users2",
-          badge: "1.5k",
         },
         {
-          label: "Classes & Sections",
-          href: "/admin/classes",
-          icon: "School",
+          label: "New Student Admission",
+          href: "/admin/students/admission",
+          icon: "UserPlus",
         },
       ],
     },

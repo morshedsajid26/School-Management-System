@@ -56,15 +56,14 @@ const DEPARTMENTS = [
 ];
 
 const AVAILABLE_CLASSES = [
-  "Grade 10-A",
-  "Grade 10-B",
-  "Grade 9-A",
-  "Grade 9-B",
-  "Grade 8-A",
-  "Grade 8-B",
-  "Grade 7-A",
-  "Grade 7-B",
-  "Grade 6-A",
+  "Batch 2025 - Sec A",
+  "Batch 2025 - Sec B",
+  "Batch 2024 - Sec A",
+  "Batch 2024 - Sec B",
+  "Batch 2026 - Sec A",
+  "Batch 2026 - Sec B",
+  "Batch 2027 - Sec A",
+  "Batch 2028 - Sec A",
 ];
 
 export default function AdminTeachersPage() {

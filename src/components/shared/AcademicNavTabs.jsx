@@ -9,10 +9,10 @@ export default function AcademicNavTabs({ className = "" }) {
   const pathname = usePathname();
 
   const tabs = [
-    { label: "Class Management", href: "/admin/classes", icon: School },
+    { label: "Batch Management", href: "/admin/classes", icon: School },
     { label: "Section Management", href: "/admin/sections", icon: DoorOpen },
-    { label: "Subject Management", href: "/admin/subjects", icon: BookOpen },
-    { label: "Teacher Assignments", href: "/admin/assignments", icon: UserCheck },
+    { label: "Course Management", href: "/admin/subjects", icon: BookOpen },
+    { label: "Course & Teacher Assign", href: "/admin/assignments", icon: UserCheck },
   ];
 
   return (
