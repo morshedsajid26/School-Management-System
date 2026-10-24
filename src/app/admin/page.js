@@ -60,7 +60,7 @@ export default function AdminAttendanceDashboardPage() {
             </Link>
             <Link href="/admin/attendance">
               <Button variant="primary" size="sm" leftIcon={<CalendarCheck className="h-4 w-4" />}>
-                Take Today&apos;s Attendance
+                View Batch Attendance
               </Button>
             </Link>
             <Link href="/admin/attendance/reports">
@@ -118,10 +118,10 @@ export default function AdminAttendanceDashboardPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Ready to mark today&apos;s roll call?
+                  Batch-wise Attendance Monitoring
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Select a class cohort to record attendance, toggle statuses with 1 click, or generate monthly register sheets.
+                  Review daily attendance submitted by assigned teachers across batches, inspect absentees, and generate reports.
                 </p>
               </div>
             </div>
@@ -134,7 +134,7 @@ export default function AdminAttendanceDashboardPage() {
               </Link>
               <Link href="/admin/attendance" className="w-full sm:w-auto">
                 <Button variant="primary" size="sm" className="w-full sm:w-auto" rightIcon={<ArrowRight className="h-4 w-4" />}>
-                  Mark Student Roll Call
+                  View Batch Attendance
                 </Button>
               </Link>
               <Link href="/admin/attendance/reports" className="w-full sm:w-auto">
@@ -268,14 +268,14 @@ export default function AdminAttendanceDashboardPage() {
                   <div>
                     {cls.status === "Pending" ? (
                       <Link href="/admin/attendance">
-                        <Button variant="primary" size="xs">
-                          Mark Now
+                        <Button variant="outline" size="xs" className="text-amber-700 border-amber-300 hover:bg-amber-50">
+                          Inspect Batch
                         </Button>
                       </Link>
                     ) : (
                       <Link href="/admin/attendance">
                         <Button variant="ghost" size="xs" className="text-slate-600 hover:text-indigo-600">
-                          Review
+                          Review Batch
                         </Button>
                       </Link>
                     )}

@@ -1,23 +1,25 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import PageHeader from "@/components/shared/PageHeader";
 import AttendanceNavTabs from "@/components/shared/AttendanceNavTabs";
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import StatsCard from "@/components/ui/StatsCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import Table, { TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import EmptyState from "@/components/shared/EmptyState";
-import StatusBadge from "@/components/shared/StatusBadge";
 import Avatar from "@/components/ui/Avatar";
 import {
   mockTeacherAttendanceRoster,
   mockAttendanceHistoryLogs,
+  mockInitialCourseSubmissions,
 } from "@/data/mock/attendance";
+import { mockTeachers } from "@/data/mock/teachers";
+import { mockAssignmentsList } from "@/data/mock/assignments";
 import { useModal } from "@/hooks/useModal";
 import {
   GraduationCap,
@@ -27,15 +29,17 @@ import {
   Calendar,
   Search,
   Filter,
-  Check,
-  AlertTriangle,
   History,
-  Save,
   Download,
   ChevronLeft,
   ChevronRight,
-  Building,
-  UserCheck,
+  Printer,
+  ExternalLink,
+  Zap,
+  BookOpen,
+  Sparkles,
+  RotateCcw,
+  Check,
   X,
 } from "lucide-react";
 
@@ -47,32 +51,161 @@ const DEPARTMENTS = [
   "Athletics",
 ];
 
-export default function TeacherAttendancePage() {
-  // Static initial date for Next.js 16 build compliance
+export default function AutomatedFacultyAttendancePage() {
+  // Duty Date
   const [selectedDate, setSelectedDate] = useState("2026-03-18");
 
   // Filters
   const [deptFilter, setDeptFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all"); // "all", "present", "pending", "leave"
   const [search, setSearch] = useState("");
 
-  // Local Roster State
-  const [roster, setRoster] = useState(mockTeacherAttendanceRoster);
+  // Course submissions tracking
+  const [courseSubmissions, setCourseSubmissions] = useState(() => {
+    const initialMap = {};
+    if (Array.isArray(mockInitialCourseSubmissions)) {
+      mockInitialCourseSubmissions.forEach((item) => {
+        initialMap[item.courseId] = item;
+      });
+    }
 
-  // Modals
-  const confirmSaveModal = useModal();
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("sms_faculty_course_submissions");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return { ...initialMap, ...parsed };
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return initialMap;
+  });
+
+  // Listen to cross-component or cross-tab storage updates
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const stored = localStorage.getItem("sms_faculty_course_submissions");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setCourseSubmissions((prev) => ({ ...prev, ...parsed }));
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // History Modal
   const historyModal = useModal();
 
-  // Toast
+  // Toast feedback
   const [toast, setToast] = useState(null);
-  const showToast = (message, type = "success") => {
+  const showToast = (message, type = "info") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Compile Faculty automated attendance list
+  const automatedFacultyRoster = useMemo(() => {
+    const submissionsList = Object.values(courseSubmissions);
+
+    return mockTeachers.map((teacher) => {
+      // Find all course submissions made by this teacher
+      const teacherSubmissions = submissionsList.filter(
+        (sub) => sub.teacherId === teacher.id || sub.teacherName === teacher.name
+      );
+
+      // Assigned courses for this teacher
+      const assignedCourses = mockAssignmentsList.filter(
+        (a) => a.teacherId === teacher.id
+      );
+
+      // Check if faculty has submitted attendance for any course
+      const hasSubmitted = teacherSubmissions.length > 0;
+
+      // Check if on official approved leave
+      const isApprovedLeave = teacher.id === "TCH-006"; // Elena Rostova
+
+      let status = "pending";
+      let timeIn = "—";
+      let verifiedSession = null;
+      let remarks = "";
+
+      if (hasSubmitted) {
+        status = "present";
+        const primarySession = teacherSubmissions[0];
+        timeIn = primarySession.submittedAt || "08:35 AM";
+        verifiedSession = {
+          code: primarySession.subjectCode,
+          name: primarySession.subjectName,
+          classSection: `${primarySession.className} - ${primarySession.sectionName}`,
+          period: primarySession.period,
+          present: primarySession.present,
+          total: primarySession.total,
+          rate: primarySession.rate,
+          submittedAt: primarySession.submittedAt,
+        };
+        remarks = `Auto-verified present via ${primarySession.subjectCode} roll call (${primarySession.present}/${primarySession.total} students attended).`;
+      } else if (isApprovedLeave) {
+        status = "leave";
+        timeIn = "—";
+        verifiedSession = {
+          code: "LEAVE",
+          name: "Approved Academic Conference",
+          classSection: "Off-Campus Duty",
+          period: "All Day",
+          present: null,
+          total: null,
+          rate: null,
+          submittedAt: "Pre-Approved",
+        };
+        remarks = "Official conference attendance approved by administration.";
+      } else {
+        status = "pending";
+        timeIn = "—";
+        const nextCourse = assignedCourses[0];
+        verifiedSession = {
+          code: nextCourse?.subjectCode || "PENDING",
+          name: nextCourse?.subjectName || "Upcoming Class Session",
+          classSection: nextCourse ? `${nextCourse.className} - ${nextCourse.sectionName}` : "Scheduled",
+          period: "Upcoming Period Today",
+          present: null,
+          total: null,
+          rate: null,
+          submittedAt: "Awaiting Session",
+        };
+        remarks = `Awaiting course roll call submission for ${assignedCourses.length} assigned ${
+          assignedCourses.length === 1 ? "lecture" : "lectures"
+        } today.`;
+      }
+
+      return {
+        id: teacher.id,
+        teacherId: teacher.id,
+        name: teacher.name,
+        employeeId: teacher.employeeId,
+        department: teacher.department,
+        designation: teacher.designation,
+        avatar: teacher.avatar,
+        status,
+        timeIn,
+        verifiedSession,
+        teacherSubmissions,
+        assignedCourses,
+        remarks,
+      };
+    });
+  }, [courseSubmissions]);
+
   // Filtered Faculty Roster
   const displayedRecords = useMemo(() => {
-    return roster.filter((teacher) => {
+    return automatedFacultyRoster.filter((teacher) => {
       const query = search.toLowerCase().trim();
       const matchesSearch =
         !query ||
@@ -87,74 +220,134 @@ export default function TeacherAttendancePage() {
 
       return matchesSearch && matchesDept && matchesStatus;
     });
-  }, [roster, search, deptFilter, statusFilter]);
+  }, [automatedFacultyRoster, search, deptFilter, statusFilter]);
 
-  // Overall Attendance Metrics
+  // Overall Automated Attendance Metrics
   const stats = useMemo(() => {
-    const total = roster.length;
-    const present = roster.filter((t) => t.status === "present").length;
-    const absent = roster.filter((t) => t.status === "absent").length;
-    const late = roster.filter((t) => t.status === "late").length;
-    const leave = roster.filter((t) => t.status === "leave").length;
+    const total = automatedFacultyRoster.length;
+    const present = automatedFacultyRoster.filter((t) => t.status === "present").length;
+    const pending = automatedFacultyRoster.filter((t) => t.status === "pending").length;
+    const leave = automatedFacultyRoster.filter((t) => t.status === "leave").length;
     const percentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
 
-    return { total, present, absent, late, leave, percentage };
-  }, [roster]);
+    return { total, present, pending, leave, percentage };
+  }, [automatedFacultyRoster]);
 
-  // Bulk Actions
-  const handleBulkMark = (newStatus) => {
-    setRoster((prev) =>
-      prev.map((teacher) => ({
-        ...teacher,
-        status: newStatus,
-        timeIn: newStatus === "present" ? "07:50 AM" : newStatus === "late" ? "08:25 AM" : "—",
-      }))
-    );
-    showToast(`Bulk updated all educators to ${newStatus.toUpperCase()}.`);
-  };
+  // Simulate Course Attendance Submission for a Pending Teacher (For testing / demonstration)
+  const handleSimulateCourseAttendance = (teacher) => {
+    const course = teacher.assignedCourses[0] || {
+      id: `SIM-${teacher.id}`,
+      subjectCode: "LEC-101",
+      subjectName: "General Lecture Session",
+      className: "Batch 2025",
+      sectionName: "Section A",
+    };
 
-  // Individual Status Change
-  const handleStatusChange = (teacherId, newStatus) => {
-    setRoster((prev) =>
-      prev.map((teacher) => {
-        if (teacher.id === teacherId) {
-          let timeIn = teacher.timeIn;
-          if (newStatus === "present" && (timeIn === "—" || !timeIn)) timeIn = "07:50 AM";
-          if (newStatus === "late") timeIn = "08:25 AM";
-          if (newStatus === "absent" || newStatus === "leave") timeIn = "—";
+    const newSubmission = {
+      courseId: course.id,
+      teacherId: teacher.id,
+      teacherName: teacher.name,
+      subjectCode: course.subjectCode,
+      subjectName: course.subjectName,
+      className: course.className,
+      sectionName: course.sectionName,
+      period: "Period 2 (09:45 AM - 10:45 AM)",
+      submittedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      present: 32,
+      absent: 2,
+      late: 0,
+      total: 34,
+      rate: 94.1,
+    };
 
-          return {
-            ...teacher,
-            status: newStatus,
-            timeIn,
-          };
+    setCourseSubmissions((prev) => {
+      const updated = { ...prev, [course.id]: newSubmission };
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("sms_faculty_course_submissions", JSON.stringify(updated));
+          window.dispatchEvent(new Event("storage"));
         }
-        return teacher;
-      })
-    );
-  };
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
 
-  // Update Remarks
-  const handleRemarkChange = (teacherId, newRemark) => {
-    setRoster((prev) =>
-      prev.map((t) => (t.id === teacherId ? { ...t, remarks: newRemark } : t))
-    );
-  };
-
-  // Save Confirmation
-  const handleConfirmSave = () => {
-    confirmSaveModal.close();
     showToast(
-      `Faculty attendance for ${selectedDate} confirmed successfully! (${stats.present} Present, ${stats.absent} Absent, ${stats.late} Late, ${stats.leave} On Leave).`
+      `Course roll call for ${course.subjectName} submitted! ${teacher.name} is now automatically marked as PRESENT.`,
+      "success"
     );
   };
 
-  // Date Navigation
+  // Reset Submissions to initial mock state
+  const handleResetSubmissions = () => {
+    const initialMap = {};
+    mockInitialCourseSubmissions.forEach((item) => {
+      initialMap[item.courseId] = item;
+    });
+    setCourseSubmissions(initialMap);
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("sms_faculty_course_submissions");
+        window.dispatchEvent(new Event("storage"));
+      }
+    } catch {
+      // ignore
+    }
+    showToast("Reset faculty course attendance submissions to default schedule.", "info");
+  };
+
+  // Quick Date Navigation
   const changeDateByDays = (days) => {
     const parts = selectedDate.split("-");
     const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
     d.setDate(d.getDate() + days);
     setSelectedDate(d.toISOString().split("T")[0]);
+  };
+
+  // Export Faculty CSV
+  const handleExportCSV = () => {
+    if (displayedRecords.length === 0) return;
+
+    const headers = [
+      "Employee ID",
+      "Faculty Name",
+      "Department",
+      "Designation",
+      "Automated Duty Status",
+      "Check-In Time",
+      "Triggering Course Session",
+      "Activity Notes",
+    ];
+
+    const rows = displayedRecords.map((t) => [
+      `"${t.employeeId}"`,
+      `"${t.name}"`,
+      `"${t.department}"`,
+      `"${t.designation}"`,
+      `"${t.status.toUpperCase()}"`,
+      `"${t.timeIn}"`,
+      `"${t.verifiedSession?.code || ""} - ${t.verifiedSession?.name || ""}"`,
+      `"${(t.remarks || "").replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Faculty_Attendance_Automated_${selectedDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`Exported ${displayedRecords.length} faculty attendance records.`);
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
@@ -163,9 +356,11 @@ export default function TeacherAttendancePage() {
       {toast && (
         <div
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border text-sm font-medium transition-all ${
-            toast.type === "info"
-              ? "bg-slate-900 text-white border-slate-800"
-              : "bg-emerald-600 text-white border-emerald-500"
+            toast.type === "error"
+              ? "bg-rose-600 text-white border-rose-500"
+              : toast.type === "success"
+              ? "bg-emerald-600 text-white border-emerald-500"
+              : "bg-slate-900 text-white border-slate-800"
           }`}
         >
           <CheckCircle2 className="h-5 w-5 shrink-0 text-white" />
@@ -181,10 +376,15 @@ export default function TeacherAttendancePage() {
 
       {/* Header */}
       <PageHeader
-        title="Teacher & Faculty Attendance"
-        subtitle="Monitor daily academic faculty arrivals, duty check-ins, leave approvals, and pedagogical availability."
+        title="Faculty Attendance (Automated)"
+        subtitle="Real-time faculty attendance automatically verified as Present when instructors submit course roll calls."
         actions={
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Badge variant="emerald" size="md" className="font-semibold px-3 py-1.5 flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Course-Driven Auto Tracking</span>
+            </Badge>
+
             <Button
               variant="outline"
               size="md"
@@ -193,13 +393,23 @@ export default function TeacherAttendancePage() {
             >
               Faculty Logs
             </Button>
+
+            <Button
+              variant="outline"
+              size="md"
+              icon={Printer}
+              onClick={handlePrint}
+            >
+              Print Sheet
+            </Button>
+
             <Button
               variant="primary"
               size="md"
-              icon={Save}
-              onClick={confirmSaveModal.open}
+              icon={Download}
+              onClick={handleExportCSV}
             >
-              Confirm Daily Sheet
+              Export Faculty CSV
             </Button>
           </div>
         }
@@ -208,7 +418,47 @@ export default function TeacherAttendancePage() {
       {/* Sub Navigation */}
       <AttendanceNavTabs />
 
-      {/* Date & Department Control Bar */}
+      {/* Automated System Explanation Banner */}
+      <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-emerald-950">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Zap className="h-5 w-5" />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <span>Automated Faculty Attendance Active</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                Zero Manual Marking
+              </span>
+            </h4>
+            <p className="text-slate-600 mt-0.5">
+              Per school policy, teachers do not take manual faculty roll call. An educator is automatically marked as <strong>Present</strong> the instant they conduct and submit student attendance for any assigned course session.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleResetSubmissions}
+            title="Reset to default mock sessions"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+          >
+            <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+            <span>Reset Demo</span>
+          </button>
+
+          <Link
+            href="/teacher/attendance"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition shadow-2xs"
+          >
+            <span>Open Teacher Portal</span>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Duty Date & Department Control Bar */}
       <Card className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border-slate-800 shadow-xl">
         <CardContent className="p-5">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -259,7 +509,7 @@ export default function TeacherAttendancePage() {
               <select
                 value={deptFilter}
                 onChange={(e) => setDeptFilter(e.target.value)}
-                className="bg-slate-800 text-white border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="bg-slate-800 text-white border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
               >
                 <option value="all">All Departments</option>
                 {DEPARTMENTS.map((dept) => (
@@ -274,63 +524,53 @@ export default function TeacherAttendancePage() {
       </Card>
 
       {/* Summary Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
         <StatsCard
           title="Total Faculty"
           value={stats.total}
           icon={GraduationCap}
           variant="indigo"
-          description="Enrolled teaching staff"
+          description="Active academic staff"
         />
         <StatsCard
-          title="Present On Campus"
+          title="Auto-Verified Present"
           value={stats.present}
           icon={CheckCircle2}
           variant="emerald"
-          description={`${stats.percentage}% reporting for duty`}
+          description={`${stats.percentage}% conducted course roll call`}
         />
         <StatsCard
-          title="Unnotified Absent"
-          value={stats.absent}
-          icon={XCircle}
-          variant="rose"
-          description="Substitute required"
-        />
-        <StatsCard
-          title="Late Arrival"
-          value={stats.late}
+          title="Awaiting Course Roll Call"
+          value={stats.pending}
           icon={Clock}
           variant="amber"
-          description="Checked in after 08:00 AM"
+          description="Scheduled for later periods today"
         />
         <StatsCard
           title="Approved Leave"
           value={stats.leave}
           icon={Calendar}
           variant="purple"
-          description="Academic & medical leave"
+          description="Official leave documented"
         />
       </div>
 
-      {/* Faculty Attendance Proportion Bar */}
+      {/* Automated Quorum Proportion Bar */}
       <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="font-bold text-slate-800 flex items-center gap-1.5">
-            <span>Faculty Quorum:</span>
+            <span>Faculty Verification Rate:</span>
             <strong className="text-emerald-600">{stats.percentage}% Present</strong>
           </span>
           <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Present ({stats.present})
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Auto-Verified Present ({stats.present})
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Absent ({stats.absent})
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Awaiting Course ({stats.pending})
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Late ({stats.late})
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> Leave ({stats.leave})
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> Approved Leave ({stats.leave})
             </span>
           </div>
         </div>
@@ -341,12 +581,8 @@ export default function TeacherAttendancePage() {
             style={{ width: `${(stats.present / (stats.total || 1)) * 100}%` }}
           />
           <div
-            className="bg-rose-500 transition-all duration-300"
-            style={{ width: `${(stats.absent / (stats.total || 1)) * 100}%` }}
-          />
-          <div
             className="bg-amber-500 transition-all duration-300"
-            style={{ width: `${(stats.late / (stats.total || 1)) * 100}%` }}
+            style={{ width: `${(stats.pending / (stats.total || 1)) * 100}%` }}
           />
           <div
             className="bg-purple-500 transition-all duration-300"
@@ -355,64 +591,59 @@ export default function TeacherAttendancePage() {
         </div>
       </div>
 
-      {/* Main Faculty Attendance Table Card */}
+      {/* Main Faculty Attendance Register Table */}
       <Card>
         <CardHeader className="border-b border-slate-100 pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle>Academic Staff Duty Register</CardTitle>
+              <CardTitle>Academic Staff Attendance & Course Log</CardTitle>
               <CardDescription>
-                Faculty daily attendance status, arrival timestamps, and designated lecture duties
+                Faculty attendance automatically synced from teacher course submissions across departments
               </CardDescription>
             </div>
 
-            {/* Bulk Actions */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase text-slate-400 mr-1">
-                Bulk Action:
-              </span>
-              <button
-                type="button"
-                onClick={() => handleBulkMark("present")}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition"
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                icon={Download}
+                onClick={handleExportCSV}
               >
-                Mark All Present
-              </button>
-              <button
-                type="button"
-                onClick={() => handleBulkMark("late")}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition"
-              >
-                Mark All Late
-              </button>
+                Export CSV
+              </Button>
             </div>
           </div>
 
           {/* Search & Status Filters */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 mt-3 border-t border-slate-100">
-            <div className="w-full sm:w-64">
+            <div className="w-full sm:w-72">
               <Input
-                placeholder="Search teacher, ID, department..."
+                placeholder="Search faculty name, ID, department..."
                 icon={Search}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-slate-500">Filter Status:</span>
               <div className="flex items-center gap-1">
-                {["all", "present", "absent", "late", "leave"].map((st) => (
+                {[
+                  { id: "all", label: "All Faculty" },
+                  { id: "present", label: "Present (Auto)" },
+                  { id: "pending", label: "Awaiting Course" },
+                  { id: "leave", label: "On Leave" },
+                ].map((st) => (
                   <button
-                    key={st}
-                    onClick={() => setStatusFilter(st)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition capitalize ${
-                      statusFilter === st
-                        ? "bg-slate-900 text-white"
+                    key={st.id}
+                    onClick={() => setStatusFilter(st.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      statusFilter === st.id
+                        ? "bg-slate-900 text-white shadow-2xs"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
-                    {st}
+                    {st.label}
                   </button>
                 ))}
               </div>
@@ -425,7 +656,7 @@ export default function TeacherAttendancePage() {
             <div className="py-12">
               <EmptyState
                 icon={GraduationCap}
-                title="No educators found"
+                title="No faculty members found"
                 description="Try clearing search filters or selecting all departments."
                 action={
                   <Button
@@ -449,9 +680,10 @@ export default function TeacherAttendancePage() {
                   <TableRow hover={false}>
                     <TableHead>Teacher Profile</TableHead>
                     <TableHead>Department & Role</TableHead>
-                    <TableHead className="w-80 text-center">Duty Status</TableHead>
-                    <TableHead className="w-28">Time In</TableHead>
-                    <TableHead>Duty Remarks</TableHead>
+                    <TableHead className="w-56 text-center">Automated Attendance Status</TableHead>
+                    <TableHead>Triggering Course Session</TableHead>
+                    <TableHead className="w-24 text-center">Time In</TableHead>
+                    <TableHead className="text-right">Action / Source</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -495,82 +727,86 @@ export default function TeacherAttendancePage() {
                               : "rose"
                           }
                           size="sm"
+                          className="mt-1"
                         >
                           Dept. of {teacher.department}
                         </Badge>
                       </TableCell>
 
-                      {/* Interactive Duty Status Buttons */}
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(teacher.id, "present")}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                              teacher.status === "present"
-                                ? "bg-emerald-600 text-white shadow-xs"
-                                : "bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
-                            }`}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                            <span>Present</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(teacher.id, "absent")}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                              teacher.status === "absent"
-                                ? "bg-rose-600 text-white shadow-xs"
-                                : "bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700"
-                            }`}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                            <span>Absent</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(teacher.id, "late")}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                              teacher.status === "late"
-                                ? "bg-amber-500 text-white shadow-xs"
-                                : "bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700"
-                            }`}
-                          >
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>Late</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(teacher.id, "leave")}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                              teacher.status === "leave"
-                                ? "bg-purple-600 text-white shadow-xs"
-                                : "bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700"
-                            }`}
-                          >
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>Leave</span>
-                          </button>
+                      {/* Automated Attendance Status (Read-Only) */}
+                      <TableCell className="text-center">
+                        <div className="inline-flex items-center justify-center">
+                          {teacher.status === "present" && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                              <span>Auto-Verified Present</span>
+                            </span>
+                          )}
+                          {teacher.status === "pending" && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              <Clock className="h-3.5 w-3.5 text-amber-600" />
+                              <span>Awaiting Course Roll Call</span>
+                            </span>
+                          )}
+                          {teacher.status === "leave" && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                              <Calendar className="h-3.5 w-3.5 text-purple-600" />
+                              <span>Approved Leave</span>
+                            </span>
+                          )}
                         </div>
                       </TableCell>
 
-                      {/* Check-In */}
-                      <TableCell className="font-mono text-xs font-semibold text-slate-700">
+                      {/* Triggering Course Session */}
+                      <TableCell>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-xs text-slate-900">
+                              {teacher.verifiedSession?.code}
+                            </span>
+                            <span className="text-slate-400">•</span>
+                            <span className="text-xs font-medium text-slate-600 truncate max-w-[180px]">
+                              {teacher.verifiedSession?.name}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            {teacher.verifiedSession?.classSection}
+                            {teacher.verifiedSession?.rate !== null && (
+                              <span className="text-emerald-700 font-semibold ml-1">
+                                • {teacher.verifiedSession?.rate}% Attendance
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Time In */}
+                      <TableCell className="text-center font-mono text-xs font-semibold text-slate-700">
                         {teacher.timeIn}
                       </TableCell>
 
-                      {/* Remarks */}
-                      <TableCell>
-                        <input
-                          type="text"
-                          value={teacher.remarks || ""}
-                          placeholder="Duty notes or reason..."
-                          onChange={(e) => handleRemarkChange(teacher.id, e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition"
-                        />
+                      {/* Action / Trigger Simulation */}
+                      <TableCell className="text-right">
+                        {teacher.status === "pending" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSimulateCourseAttendance(teacher)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition"
+                            title="Simulate taking course attendance to test auto-present"
+                          >
+                            <Sparkles className="h-3 w-3 text-indigo-600" />
+                            <span>Simulate Roll Call</span>
+                          </button>
+                        ) : teacher.status === "present" ? (
+                          <span className="text-[11px] text-emerald-600 font-semibold flex items-center justify-end gap-1">
+                            <Check className="h-3.5 w-3.5" />
+                            <span>Logged at {teacher.timeIn}</span>
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-purple-600 font-medium">
+                            Administrative Leave
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -581,59 +817,12 @@ export default function TeacherAttendancePage() {
         </CardContent>
       </Card>
 
-      {/* CONFIRMATION MODAL TO SAVE ATTENDANCE */}
-      <Modal
-        isOpen={confirmSaveModal.isOpen}
-        onClose={confirmSaveModal.close}
-        title="Confirm Faculty Register Submission"
-        description={`Date: ${selectedDate} • Institutional Quorum Audit`}
-        maxWidth="max-w-md"
-        footer={
-          <>
-            <Button variant="outline" size="md" onClick={confirmSaveModal.close}>
-              Cancel
-            </Button>
-            <Button variant="primary" size="md" icon={Save} onClick={handleConfirmSave}>
-              Confirm Faculty Sheet
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
-            <div className="flex justify-between font-semibold">
-              <span className="text-slate-600">Total Teaching Faculty:</span>
-              <strong className="text-slate-900">{stats.total} Educators</strong>
-            </div>
-            <div className="flex justify-between font-semibold">
-              <span className="text-emerald-700">Present On Campus:</span>
-              <strong className="text-emerald-700">{stats.present} ({stats.percentage}%)</strong>
-            </div>
-            <div className="flex justify-between font-semibold">
-              <span className="text-rose-700">Unnotified Absent:</span>
-              <strong className="text-rose-700">{stats.absent}</strong>
-            </div>
-            <div className="flex justify-between font-semibold">
-              <span className="text-amber-700">Late Arrivals:</span>
-              <strong className="text-amber-700">{stats.late}</strong>
-            </div>
-            <div className="flex justify-between font-semibold">
-              <span className="text-purple-700">Approved Leave:</span>
-              <strong className="text-purple-700">{stats.leave}</strong>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500">
-            Confirming will update faculty HR records and synchronize substitute arrangements if needed.
-          </p>
-        </div>
-      </Modal>
-
       {/* ATTENDANCE HISTORY LOGS MODAL */}
       <Modal
         isOpen={historyModal.isOpen}
         onClose={historyModal.close}
-        title="Faculty Attendance History Logs"
-        description="Daily teacher attendance records and department quorums."
+        title="Institutional Faculty Attendance History"
+        description="Historical faculty presence records and teaching coverage logs."
         maxWidth="max-w-2xl"
         footer={
           <Button variant="primary" size="md" onClick={historyModal.close}>
@@ -646,38 +835,40 @@ export default function TeacherAttendancePage() {
             <TableHeader>
               <TableRow hover={false}>
                 <TableHead>Date</TableHead>
-                <TableHead>Scope</TableHead>
+                <TableHead>Department Scope</TableHead>
                 <TableHead>Present</TableHead>
-                <TableHead>Absent</TableHead>
-                <TableHead>Late</TableHead>
+                <TableHead>Pending</TableHead>
+                <TableHead>Leave</TableHead>
                 <TableHead className="text-right">Attendance Rate</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockAttendanceHistoryLogs.filter((l) => l.scope.includes("Faculty")).map((log, idx) => (
-                <TableRow key={idx}>
-                  <TableCell className="font-mono text-xs font-bold text-slate-800">
-                    {log.date}
-                  </TableCell>
-                  <TableCell className="text-xs font-semibold text-slate-700">
-                    {log.scope}
-                  </TableCell>
-                  <TableCell className="text-xs font-bold text-emerald-600">
-                    {log.present}
-                  </TableCell>
-                  <TableCell className="text-xs font-bold text-rose-600">
-                    {log.absent}
-                  </TableCell>
-                  <TableCell className="text-xs font-bold text-amber-600">
-                    {log.late}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className="px-2 py-0.5 rounded text-xs font-black bg-indigo-50 text-indigo-700 font-mono">
-                      {log.rate}%
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {mockAttendanceHistoryLogs
+                .filter((l) => l.scope === "All Faculty")
+                .map((log, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell className="font-mono text-xs font-bold text-slate-800">
+                      {log.date}
+                    </TableCell>
+                    <TableCell className="text-xs font-semibold text-slate-700">
+                      {log.scope}
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-emerald-600">
+                      {log.present}
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-amber-600">
+                      {log.absent || log.late}
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-purple-600">
+                      {log.leave || 0}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="px-2 py-0.5 rounded text-xs font-black bg-indigo-50 text-indigo-700 font-mono">
+                        {log.rate}%
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </div>

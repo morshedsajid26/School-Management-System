@@ -86,7 +86,7 @@ export default function HomePage() {
               href="/admin/attendance"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition duration-150"
             >
-              Take Attendance
+              Batch Attendance
             </Link>
             <Link
               href="/admin"
@@ -112,7 +112,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-base md:text-lg text-slate-600 leading-relaxed">
-            Record daily student roll calls, view comprehensive 31-day monthly attendance matrix sheets, monitor chronic absentees, and export reports in seconds.
+            Monitor batch-wise student attendance, inspect teacher-submitted daily roll calls, view comprehensive 31-day monthly matrix sheets, and export reports in seconds.
           </p>
 
           <div className="flex items-center justify-center gap-3 pt-3 flex-wrap">
@@ -121,7 +121,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-md shadow-indigo-600/25 hover:bg-indigo-700 transition"
             >
               <CalendarCheck className="h-4 w-4" />
-              <span>Take Today&apos;s Attendance</span>
+              <span>View Batch Attendance</span>
             </Link>
             <Link
               href="/admin/attendance/reports"

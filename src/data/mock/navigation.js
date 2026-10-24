@@ -12,13 +12,13 @@ export const navigationConfig = {
           exact: true,
         },
         {
-          label: "Take Attendance",
+          label: "Batch Attendance",
           href: "/admin/attendance",
           icon: "CalendarCheck",
-          badge: "Daily",
+          badge: "View Only",
           subItems: [
-            { label: "Student Roll Call", href: "/admin/attendance" },
-            { label: "Faculty Attendance", href: "/admin/attendance/teachers" },
+            { label: "Batch-wise Student View", href: "/admin/attendance" },
+            { label: "Faculty Attendance (Auto)", href: "/admin/attendance/teachers" },
           ],
         },
         {

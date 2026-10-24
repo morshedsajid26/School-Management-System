@@ -9,9 +9,9 @@ export default function AttendanceNavTabs({ className = "" }) {
   const pathname = usePathname();
 
   const tabs = [
-    { label: "Daily Student Attendance", href: "/admin/attendance", icon: CalendarCheck, exact: true },
+    { label: "Batch-wise Student Attendance", href: "/admin/attendance", icon: CalendarCheck, exact: true },
     { label: "Monthly Reports & Analytics", href: "/admin/attendance/reports", icon: BarChart3, exact: false },
-    { label: "Teacher & Staff Attendance", href: "/admin/attendance/teachers", icon: Users, exact: false },
+    { label: "Faculty Attendance (Auto-Tracked)", href: "/admin/attendance/teachers", icon: Users, exact: false },
   ];
 
   return (

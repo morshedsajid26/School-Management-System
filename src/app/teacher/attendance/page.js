@@ -10,7 +10,10 @@ import Avatar from "@/components/ui/Avatar";
 import Modal from "@/components/ui/Modal";
 import { mockAssignmentsList } from "@/data/mock/assignments";
 import { mockTeachers } from "@/data/mock/teachers";
-import { mockStudentAttendanceRoster } from "@/data/mock/attendance";
+import {
+  mockStudentAttendanceRoster,
+  mockInitialCourseSubmissions,
+} from "@/data/mock/attendance";
 import { mockStudents } from "@/data/mock/students";
 import { useAuth } from "@/context/AuthContext";
 import { useModal } from "@/hooks/useModal";
@@ -81,8 +84,28 @@ export default function TeacherCourseAttendancePage() {
     }));
   });
 
-  // Submission tracking
-  const [submittedCourses, setSubmittedCourses] = useState({});
+  // Submission tracking initialized from initial submissions and localStorage
+  const [submittedCourses, setSubmittedCourses] = useState(() => {
+    const initialMap = {};
+    if (Array.isArray(mockInitialCourseSubmissions)) {
+      mockInitialCourseSubmissions.forEach((item) => {
+        initialMap[item.courseId] = item;
+      });
+    }
+
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("sms_faculty_course_submissions");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return { ...initialMap, ...parsed };
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return initialMap;
+  });
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg, type = "success") => {
@@ -169,20 +192,41 @@ export default function TeacherCourseAttendancePage() {
     e.preventDefault();
     if (!activeCourse) return;
 
-    setSubmittedCourses((prev) => ({
-      ...prev,
-      [activeCourse.id]: {
-        submittedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        teacherName: activeTeacher.name,
-        present: stats.present,
-        absent: stats.absent,
-        late: stats.late,
-        rate: stats.rate,
-      },
-    }));
+    const submissionData = {
+      courseId: activeCourse.id,
+      teacherId: activeTeacher.id,
+      teacherName: activeTeacher.name,
+      subjectCode: activeCourse.subjectCode,
+      subjectName: activeCourse.subjectName,
+      className: activeCourse.className,
+      sectionName: activeCourse.sectionName,
+      period: selectedPeriod,
+      submittedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      present: stats.present,
+      absent: stats.absent,
+      late: stats.late,
+      total: stats.total,
+      rate: stats.rate,
+    };
+
+    setSubmittedCourses((prev) => {
+      const updated = {
+        ...prev,
+        [activeCourse.id]: submissionData,
+      };
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("sms_faculty_course_submissions", JSON.stringify(updated));
+          window.dispatchEvent(new Event("storage"));
+        } catch {
+          // ignore
+        }
+      }
+      return updated;
+    });
 
     showToast(
-      `Attendance for ${activeCourse.subjectName} (${activeCourse.className}-${activeCourse.sectionName}) successfully submitted by ${activeTeacher.name}!`,
+      `Course attendance submitted! ${activeTeacher.name} is now automatically verified as PRESENT for today.`,
       "success"
     );
   };
