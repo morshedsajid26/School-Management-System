@@ -5,7 +5,11 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import RoleSwitcherModal from "@/components/layout/RoleSwitcherModal";
 
-export default function DashboardShell({ children }) {
+export default function DashboardShell({
+  children,
+  contentMaxWidth = "max-w-[1760px]", // Central layout width control
+  contentClassName = "",
+}) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
@@ -38,7 +42,9 @@ export default function DashboardShell({ children }) {
           onOpenRoleSwitcher={() => setRoleSwitcherOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main
+          className={`flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full mx-auto transition-all ${contentMaxWidth} ${contentClassName}`}
+        >
           {children}
         </main>
       </div>

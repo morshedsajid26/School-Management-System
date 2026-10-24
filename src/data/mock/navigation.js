@@ -68,11 +68,6 @@ export const navigationConfig = {
           href: "/admin/students",
           icon: "Users2",
         },
-        {
-          label: "New Student Admission",
-          href: "/admin/students/admission",
-          icon: "UserPlus",
-        },
       ],
     },
     {

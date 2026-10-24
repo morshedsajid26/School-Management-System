@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from "react";
 import PageHeader from "@/components/shared/PageHeader";
-import AcademicNavTabs from "@/components/shared/AcademicNavTabs";
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import StatsCard from "@/components/ui/StatsCard";
 import Button from "@/components/ui/Button";
@@ -402,9 +401,6 @@ export default function TeacherAssignmentsPage() {
           </div>
         }
       />
-
-      {/* Sub Navigation */}
-      <AcademicNavTabs />
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, UserPlus, GraduationCap, Briefcase } from "lucide-react";
+import { Users, UserPlus } from "lucide-react";
 
 export default function PeopleNavTabs({ className = "" }) {
   const pathname = usePathname();
@@ -11,7 +11,6 @@ export default function PeopleNavTabs({ className = "" }) {
   const tabs = [
     { label: "Students Directory", href: "/admin/students", icon: Users, exact: true },
     { label: "New Student Admission", href: "/admin/students/admission", icon: UserPlus },
-    { label: "Faculty & Teachers", href: "/admin/teachers", icon: GraduationCap },
   ];
 
   return (

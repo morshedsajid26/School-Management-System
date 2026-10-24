@@ -8,6 +8,7 @@
   --primary: #4f46e5;
   --primary-foreground: #ffffff;
   --border: #e2e8f0;
+  --layout-max-width: 1760px;
 }
 
 @theme inline {

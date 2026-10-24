@@ -251,7 +251,7 @@ export default function AdminSettingsPage() {
   const isDirty = JSON.stringify(formData) !== JSON.stringify(savedSnapshot);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Page Header */}
       <PageHeader
         title="School Profile & Settings"
